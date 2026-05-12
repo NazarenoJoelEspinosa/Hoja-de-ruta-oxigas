@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);font-size:14px;color:var(--color-text-primary);background:var(--color-background-secondary)}
+.app{max-width:980px;margin:0 auto;padding:0 0 2rem}
+.tabs{display:flex;gap:6px;padding:1rem 0 0;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:1.2rem}
+.tab{padding:7px 16px;font-size:13px;font-weight:500;border:0.5px solid transparent;border-bottom:none;border-radius:var(--border-radius-md) var(--border-radius-md) 0 0;cursor:pointer;color:var(--color-text-secondary);background:transparent}
+.tab.active{background:var(--color-background-primary);border-color:var(--color-border-tertiary);color:var(--color-text-primary);margin-bottom:-0.5px}
+.section{display:none}.section.active{display:block}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:10px}
+label{display:block;font-size:12px;color:var(--color-text-secondary);margin-bottom:4px}
+input,select,textarea{width:100%;padding:7px 10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px;font-family:inherit}
+textarea{resize:vertical;min-height:52px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.row4{display:grid;grid-template-columns:2fr 2fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px}
+.btn{background:transparent;border:0.5px solid var(--color-border-secondary);padding:7px 14px;border-radius:var(--border-radius-md);font-size:13px;cursor:pointer;color:var(--color-text-primary)}
+.btn:hover{background:var(--color-background-secondary)}
+.btn-primary{background:var(--color-text-primary);color:var(--color-background-primary);border:none;padding:8px 18px;border-radius:var(--border-radius-md);font-size:13px;font-weight:500;cursor:pointer}
+.btn-danger{background:transparent;border:0.5px solid var(--color-border-danger);color:var(--color-text-danger);padding:5px 9px;border-radius:var(--border-radius-md);font-size:12px;cursor:pointer}
+.btn-pass{padding:4px 10px;border-radius:var(--border-radius-md);font-size:11px;cursor:pointer;white-space:nowrap;border:0.5px solid #d97706;color:#92400e;background:transparent}
+.btn-pass:hover{background:#fef3c7}
+.btn-pass.reverse{border-color:#6366f1;color:#3730a3;background:transparent}
+.btn-pass.reverse:hover{background:#ede9fe}
+.actions-row{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:7px 8px;color:var(--color-text-secondary);font-weight:500;font-size:11px;border-bottom:0.5px solid var(--color-border-tertiary);white-space:nowrap}
+td{padding:7px 8px;border-bottom:0.5px solid var(--color-border-tertiary);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--color-background-secondary)}
+.tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:99px;font-weight:500;margin:1px;white-space:nowrap}
+.tag-garrafa{background:#E6F1FB;color:#0C447C}
+.tag-gas{background:#FAEEDA;color:#633806}
+.tag-paga{background:#EAF3DE;color:#27500A}
+.tag-pendiente{background:#FAEEDA;color:#633806}
+.tag-pedido{background:#FBEAF0;color:#72243E}
+.tag-manana{background:#EAF3DE;color:#1a4a10}
+.tag-tarde{background:#FAEEDA;color:#633806}
+.tag-pasado{background:#F1EFE8;color:#666}
+.items-preview{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:7px 10px;margin-bottom:8px}
+.item-row-prev{display:flex;align-items:center;justify-content:space-between;padding:3px 0;font-size:12px;gap:8px}
+.item-row-prev:not(:last-child){border-bottom:0.5px solid var(--color-border-tertiary)}
+.divider{border:none;border-top:0.5px solid var(--color-border-tertiary);margin:10px 0}
+.autocomplete-wrap{position:relative}
+.suggestions{position:absolute;top:100%;left:0;right:0;background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);z-index:200;max-height:150px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.12)}
+.suggestion{padding:7px 12px;cursor:pointer;font-size:13px}
+.suggestion:hover{background:var(--color-background-secondary)}
+.turno-block{margin-bottom:14px}
+.turno-header{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.empty-state{text-align:center;padding:1.5rem;color:var(--color-text-secondary);font-size:13px}
+.nota-pedido{font-size:11px;color:#72243E;background:#FBEAF0;border-radius:4px;padding:2px 6px;margin-top:2px;display:inline-block;max-width:200px;word-break:break-word}
+.pedido-box{display:none;margin-top:8px;padding:10px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary)}
+.toggle-row{display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer;font-size:13px;user-select:none}
+.toggle-row input[type=checkbox]{width:auto;cursor:pointer}
+.garrafa-box{display:none;margin-top:8px;padding:10px;background:#EFF6FF;border-radius:var(--border-radius-md);border:0.5px solid #bfdbfe}
+.garrafa-label{font-size:12px;font-weight:500;color:#1e40af;margin-bottom:6px}
+.historial-day{margin-bottom:14px}
+.historial-day-title{font-size:12px;font-weight:600;color:var(--color-text-secondary);margin-bottom:5px;padding-bottom:3px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.client-card{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:9px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.section-title{font-size:14px;font-weight:500;margin-bottom:10px}
+.accion-col{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('ruta',this)">🗺 Hoja de ruta</button>
+  <button class="tab" onclick="switchTab('historial',this)">📅 Historial</button>
+  <button class="tab" onclick="switchTab('clientes',this)">👥 Clientes</button>
+</div>
+
+<!-- ===== HOJA DE RUTA ===== -->
+<div id="tab-ruta" class="section active">
+
+  <div class="card">
+    <p class="section-title">Nuevo pedido</p>
+    <div class="row2">
+      <div class="autocomplete-wrap">
+        <label>Cliente</label>
+        <input type="text" id="ruta-nombre" placeholder="Escribí el nombre..." oninput="sugerirCliente()" autocomplete="off">
+        <div class="suggestions" id="sug-ruta" style="display:none"></div>
+      </div>
+      <div><label>Dirección</label><input type="text" id="ruta-dir" placeholder="Se completa automático"></div>
+    </div>
+    <div class="row2">
+      <div><label>Repartidor</label>
+        <select id="ruta-rep"><option value="Jose">José</option><option value="Claudio">Claudio</option></select>
+      </div>
+      <div><label>Turno</label>
+        <select id="ruta-turno"><option value="manana">☀ Mañana</option><option value="tarde">🌆 Tarde</option></select>
+      </div>
+    </div>
+
+    <hr class="divider">
+    <p style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px">Productos — agregá uno o más y luego guardá el pedido</p>
+    <div class="row4">
+      <div><label>Tipo</label>
+        <select id="item-tipo" onchange="actualizarProductos()">
+          <option value="garrafa">Garrafa</option>
+          <option value="gas">Gas</option>
+        </select>
+      </div>
+      <div><label>Producto</label><select id="item-prod"></select></div>
+      <div><label>Cant.</label><input type="number" id="item-cant" value="1" min="1"></div>
+      <div><button class="btn" style="height:34px;white-space:nowrap" onclick="agregarItem()">+ Agregar ítem</button></div>
+    </div>
+    <div id="items-preview" style="display:none" class="items-preview"></div>
+
+    <!-- Garrafa: aparece cuando hay al menos una garrafa en los ítems -->
+    <div class="garrafa-box" id="garrafa-box">
+      <p class="garrafa-label">🔵 Estado de garrafa</p>
+      <select id="ruta-garrafa-estado">
+        <option value="pendiente">Garrafa pendiente de pago</option>
+        <option value="paga">Garrafa pagada</option>
+      </select>
+    </div>
+
+    <!-- Pedido especial -->
+    <label class="toggle-row">
+      <input type="checkbox" id="chk-pedido" onchange="togglePedidoBox()">
+      <span>+ Tiene pedido especial (nota)</span>
+    </label>
+    <div class="pedido-box" id="pedido-box">
+      <label>Nota del pedido</label>
+      <textarea id="ruta-nota" placeholder="Ej: pedir factura, entregar también alambre, etc."></textarea>
+    </div>
+
+    <div class="actions-row">
+      <button class="btn" onclick="limpiarForm()">Limpiar</button>
+      <button class="btn-primary" onclick="guardarPedido()">✓ Guardar pedido</button>
+    </div>
+  </div>
+
+  <!-- Turno Mañana -->
+  <div class="turno-block">
+    <div class="turno-header">
+      <span class="tag tag-manana" style="font-size:13px;padding:4px 12px">☀ Mañana</span>
+      <span style="font-size:13px;font-weight:500;color:var(--color-text-secondary)" id="lbl-fecha"></span>
+      <button class="btn" style="margin-left:auto;font-size:12px;padding:5px 12px" onclick="imprimirTurno('manana')">🖨 Imprimir mañana</button>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table><thead><tr>
+        <th>#</th><th>Cliente</th><th>Dirección</th><th>Productos</th><th>Garrafa</th><th>Pedido especial</th><th>Repartidor</th><th>Origen</th><th></th>
+      </tr></thead>
+      <tbody id="body-manana"></tbody></table>
+    </div>
+  </div>
+
+  <!-- Turno Tarde -->
+  <div class="turno-block">
+    <div class="turno-header">
+      <span class="tag tag-tarde" style="font-size:13px;padding:4px 12px">🌆 Tarde</span>
+      <button class="btn" style="margin-left:auto;font-size:12px;padding:5px 12px" onclick="imprimirTurno('tarde')">🖨 Imprimir tarde</button>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table><thead><tr>
+        <th>#</th><th>Cliente</th><th>Dirección</th><th>Productos</th><th>Garrafa</th><th>Pedido especial</th><th>Repartidor</th><th>Origen</th><th></th>
+      </tr></thead>
+      <tbody id="body-tarde"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== HISTORIAL ===== -->
+<div id="tab-historial" class="section">
+  <div class="card">
+    <p class="section-title">Historial de rutas</p>
+    <div id="historial-content"><p class="empty-state">No hay registros todavía.</p></div>
+  </div>
+</div>
+
+<!-- ===== CLIENTES ===== -->
+<div id="tab-clientes" class="section">
+  <div class="card">
+    <p class="section-title">Agregar cliente</p>
+    <div class="row2">
+      <div><label>Nombre</label><input type="text" id="cli-nombre" placeholder="Nombre completo"></div>
+      <div><label>Dirección</label><input type="text" id="cli-dir" placeholder="Dirección completa"></div>
+    </div>
+    <div class="actions-row">
+      <button class="btn-primary" onclick="guardarCliente()">+ Guardar cliente</button>
+    </div>
+  </div>
+  <div class="card">
+    <p class="section-title">Clientes guardados</p>
+    <div id="clientes-list"><p style="color:var(--color-text-secondary);font-size:13px">Todavía no hay clientes.</p></div>
+  </div>
+</div>
+
+</div><!-- end app -->
+
+<script>
+const GARRAFAS=['Garrafa 10 kg Total','Garrafa 10 kg YPF','Garrafa 15 kg','Garrafa 45 kg','Garrafa Clark Total','Garrafa Clark YPF'];
+const GASES=['Mix20 (ATAL)','Gas Carbónico','Oxígeno','Nitrógeno','Mix310 (Noxal)','Argón','Acetileno'];
+
+let clientes=[], pedidos=[], itemsTemp=[];
+
+// ── Fechas ──────────────────────────────────────────────
+function fechaClave(offset=0){
+  const d=new Date(); d.setDate(d.getDate()+offset);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function fechaLinda(str){
+  if(!str)return'';
+  const [y,m,d]=str.split('-');
+  const dias=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  const dt=new Date(Number(y),Number(m)-1,Number(d));
+  return `${dias[dt.getDay()]} ${d}/${m}/${y}`;
+}
+function sumarDia(str){
+  const d=new Date(str+'T12:00:00');
+  d.setDate(d.getDate()+1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function restarDia(str){
+  const d=new Date(str+'T12:00:00');
+  d.setDate(d.getDate()-1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// ── Productos ────────────────────────────────────────────
+function actualizarProductos(){
+  const tipo=document.getElementById('item-tipo').value;
+  document.getElementById('item-prod').innerHTML=(tipo==='garrafa'?GARRAFAS:GASES).map(p=>`<option>${p}</option>`).join('');
+}
+actualizarProductos();
+
+function hayGarrafa(){return itemsTemp.some(it=>it.tipo==='garrafa');}
+
+function actualizarGarrafaBox(){
+  document.getElementById('garrafa-box').style.display=hayGarrafa()?'block':'none';
+}
+
+function agregarItem(){
+  const tipo=document.getElementById('item-tipo').value;
+  const prod=document.getElementById('item-prod').value;
+  const cant=parseInt(document.getElementById('item-cant').value)||1;
+  itemsTemp.push({tipo,prod,cant});
+  document.getElementById('item-cant').value=1;
+  renderItemsTemp();
+  actualizarGarrafaBox();
+}
+
+function quitarItem(i){
+  itemsTemp.splice(i,1);
+  renderItemsTemp();
+  actualizarGarrafaBox();
+}
+
+function renderItemsTemp(){
+  const el=document.getElementById('items-preview');
+  if(!itemsTemp.length){el.style.display='none';return;}
+  el.style.display='block';
+  el.innerHTML=itemsTemp.map((it,i)=>`
+    <div class="item-row-prev">
+      <span><span class="tag tag-${it.tipo}">${it.tipo==='garrafa'?'Garrafa':'Gas'}</span> ${it.prod}</span>
+      <span style="display:flex;align-items:center;gap:6px"><strong>x${it.cant}</strong>
+        <button class="btn-danger" style="padding:2px 7px" onclick="quitarItem(${i})">✕</button>
+      </span>
+    </div>`).join('');
+}
+
+function togglePedidoBox(){
+  document.getElementById('pedido-box').style.display=
+    document.getElementById('chk-pedido').checked?'block':'none';
+}
+
+function limpiarForm(){
+  document.getElementById('ruta-nombre').value='';
+  document.getElementById('ruta-dir').value='';
+  document.getElementById('ruta-nota').value='';
+  document.getElementById('chk-pedido').checked=false;
+  document.getElementById('pedido-box').style.display='none';
+  document.getElementById('garrafa-box').style.display='none';
+  document.getElementById('ruta-garrafa-estado').value='pendiente';
+  itemsTemp=[];
+  renderItemsTemp();
+}
+
+function guardarPedido(){
+  const nombre=document.getElementById('ruta-nombre').value.trim();
+  if(!nombre){alert('Completá el nombre del cliente');return;}
+  if(!itemsTemp.length){alert('Agregá al menos un producto con el botón "+ Agregar ítem"');return;}
+  const tienePedido=document.getElementById('chk-pedido').checked;
+  const tieneGarrafa=hayGarrafa();
+  const hoy=fechaClave();
+  pedidos.push({
+    id:Date.now(),
+    nombre,
+    dir:document.getElementById('ruta-dir').value.trim(),
+    rep:document.getElementById('ruta-rep').value,
+    turno:document.getElementById('ruta-turno').value,
+    tienePedido,
+    nota:tienePedido?document.getElementById('ruta-nota').value.trim():'',
+    tieneGarrafa,
+    garrafaEstado:tieneGarrafa?document.getElementById('ruta-garrafa-estado').value:'',
+    items:[...itemsTemp],
+    fechaOrigen:hoy,
+    fechaActual:hoy
+  });
+  if(!clientes.find(c=>c.nombre.toLowerCase()===nombre.toLowerCase())){
+    clientes.push({nombre,dir:document.getElementById('ruta-dir').value.trim()});
+    renderClientes();
+  }
+  limpiarForm();
+  renderRuta();
+  guardarStorage();
+}
+
+// ── Pasar turno ──────────────────────────────────────────
+// Mañana → Tarde (mismo día)   |   Tarde → Mañana (día siguiente)
+// Reversible: Tarde → Mañana (mismo día si es hoy) | Mañana → Tarde anterior
+function pasarAdelante(id){
+  const p=pedidos.find(p=>p.id===id);
+  if(!p)return;
+  if(p.turno==='manana'){
+    p.turno='tarde';
+    // fechaActual no cambia
+  } else {
+    p.turno='manana';
+    p.fechaActual=sumarDia(p.fechaActual);
+  }
+  renderRuta();guardarStorage();
+}
+
+function pasarAtras(id){
+  const p=pedidos.find(p=>p.id===id);
+  if(!p)return;
+  const hoy=fechaClave();
+  if(p.turno==='tarde'){
+    // volver a mañana del mismo día
+    p.turno='manana';
+  } else {
+    // estaba en mañana de un día futuro → volver a tarde del día anterior
+    const diaAnterior=restarDia(p.fechaActual);
+    // no dejar ir antes de hoy
+    if(diaAnterior<hoy){alert('No se puede volver más atrás de hoy');return;}
+    p.turno='tarde';
+    p.fechaActual=diaAnterior;
+  }
+  renderRuta();guardarStorage();
+}
+
+function borrarPedido(id){
+  if(!confirm('¿Eliminar este pedido?'))return;
+  const i=pedidos.findIndex(p=>p.id===id);
+  if(i>-1){pedidos.splice(i,1);renderRuta();guardarStorage();}
+}
+
+// ── Render tablas ────────────────────────────────────────
+function buildRows(lista){
+  if(!lista.length) return`<tr><td colspan="9" class="empty-state">Sin pedidos para este turno</td></tr>`;
+  return lista.map((p,i)=>{
+    const hoy=fechaClave();
+
+    // Celda garrafa
+    let garrafaCell='<span style="color:var(--color-text-secondary)">—</span>';
+    if(p.tieneGarrafa&&p.garrafaEstado){
+      const gc=p.garrafaEstado==='paga'?'tag-paga':'tag-pendiente';
+      const gl=p.garrafaEstado==='paga'?'✓ Pagada':'Pendiente';
+      garrafaCell=`<span class="tag ${gc}">${gl}</span>`;
+    }
+
+    // Celda pedido especial
+    let pedidoCell='<span style="color:var(--color-text-secondary)">—</span>';
+    if(p.tienePedido){
+      pedidoCell=`<span class="tag tag-pedido">⚠ Pedido</span>`;
+      if(p.nota) pedidoCell+=`<div class="nota-pedido">📝 ${p.nota}</div>`;
+    }
+
+    // Origen
+    let origenCell='<span style="color:var(--color-text-secondary);font-size:11px">Hoy</span>';
+    if(p.fechaOrigen!==p.fechaActual||p.turno!==document.getElementById('ruta-turno')?.value){
+      if(p.fechaActual!==hoy||p.fechaOrigen!==hoy){
+        origenCell=`<span class="tag tag-pasado" title="Origen: ${p.fechaOrigen}">📌 ${p.fechaOrigen}</span>`;
+      }
+    }
+    if(p.fechaOrigen===hoy&&p.fechaActual===hoy) origenCell='<span style="color:var(--color-text-secondary);font-size:11px">Hoy</span>';
+    else if(p.fechaOrigen!==p.fechaActual) origenCell=`<span class="tag tag-pasado">📌 ${p.fechaOrigen}</span>`;
+
+    // Botones de turno
+    // adelante: mañana→tarde | tarde→mañana sig.
+    const lblAd=p.turno==='manana'?'→ Tarde':'→ Mañana sig.';
+    // atrás: tarde→mañana mismo día | mañana→tarde día ant. (solo si no es hoy)
+    const lblAt=p.turno==='tarde'?'← Mañana':'← Tarde ant.';
+    const puedeAtras=!(p.turno==='manana'&&p.fechaActual===hoy); // no retroceder si ya es mañana de hoy
+
+    return`<tr>
+      <td style="color:var(--color-text-secondary)">${i+1}</td>
+      <td style="font-weight:500;white-space:nowrap">${p.nombre}</td>
+      <td style="font-size:11px;color:var(--color-text-secondary)">${p.dir}</td>
+      <td>${p.items.map(it=>`<span class="tag tag-${it.tipo}">${it.cant}x ${it.prod}</span>`).join(' ')}</td>
+      <td>${garrafaCell}</td>
+      <td>${pedidoCell}</td>
+      <td style="font-size:12px;white-space:nowrap">${p.rep}</td>
+      <td>${origenCell}</td>
+      <td><div class="accion-col">
+        ${puedeAtras?`<button class="btn-pass reverse" onclick="pasarAtras(${p.id})" title="Volver al turno anterior">${lblAt}</button>`:''}
+        <button class="btn-pass" onclick="pasarAdelante(${p.id})" title="Pasar al siguiente turno">${lblAd}</button>
+        <button class="btn-danger" onclick="borrarPedido(${p.id})">✕</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderRuta(){
+  const hoy=fechaClave();
+  document.getElementById('lbl-fecha').textContent=fechaLinda(hoy);
+  ['manana','tarde'].forEach(turno=>{
+    const lista=pedidos.filter(p=>p.fechaActual===hoy&&p.turno===turno);
+    document.getElementById('body-'+turno).innerHTML=buildRows(lista);
+  });
+}
+
+// ── Historial ────────────────────────────────────────────
+function renderHistorial(){
+  const dias={};
+  pedidos.forEach(p=>{
+    if(!dias[p.fechaOrigen])dias[p.fechaOrigen]=[];
+    dias[p.fechaOrigen].push(p);
+  });
+  const keys=Object.keys(dias).sort().reverse();
+  const el=document.getElementById('historial-content');
+  if(!keys.length){el.innerHTML='<p class="empty-state">No hay registros todavía.</p>';return;}
+  el.innerHTML=keys.map(k=>`
+    <div class="historial-day">
+      <p class="historial-day-title">📅 ${fechaLinda(k)}</p>
+      <table><thead><tr><th>Cliente</th><th>Turno orig.</th><th>Productos</th><th>Garrafa</th><th>Pedido</th><th>Repartidor</th><th>Entregado</th></tr></thead>
+      <tbody>${dias[k].map(p=>{
+        let gc='—';
+        if(p.tieneGarrafa&&p.garrafaEstado){
+          const cls=p.garrafaEstado==='paga'?'tag-paga':'tag-pendiente';
+          gc=`<span class="tag ${cls}">${p.garrafaEstado==='paga'?'✓ Paga':'Pendiente'}</span>`;
+        }
+        let pc='—';
+        if(p.tienePedido){
+          pc='<span class="tag tag-pedido">⚠</span>';
+          if(p.nota) pc+=` <span style="font-size:11px">${p.nota}</span>`;
+        }
+        const entregado=p.fechaActual===p.fechaOrigen?'Mismo día':`→ ${p.fechaActual}`;
+        return`<tr>
+          <td style="font-weight:500">${p.nombre}</td>
+          <td><span class="tag tag-${p.turno==='manana'?'manana':'tarde'}">${p.turno==='manana'?'☀ Mañana':'🌆 Tarde'}</span></td>
+          <td>${p.items.map(it=>`<span class="tag tag-${it.tipo}">${it.cant}x ${it.prod}</span>`).join(' ')}</td>
+          <td>${gc}</td><td>${pc}</td>
+          <td style="font-size:12px">${p.rep}</td>
+          <td style="font-size:11px;color:var(--color-text-secondary)">${entregado}</td>
+        </tr>`;
+      }).join('')}</tbody></table>
+    </div>`).join('');
+}
+
+// ── Clientes ─────────────────────────────────────────────
+function guardarCliente(){
+  const nombre=document.getElementById('cli-nombre').value.trim();
+  const dir=document.getElementById('cli-dir').value.trim();
+  if(!nombre){alert('Ingresá el nombre');return;}
+  if(clientes.find(c=>c.nombre.toLowerCase()===nombre.toLowerCase())){alert('Ya existe ese cliente');return;}
+  clientes.push({nombre,dir});
+  document.getElementById('cli-nombre').value='';
+  document.getElementById('cli-dir').value='';
+  renderClientes();guardarStorage();
+}
+function borrarCliente(i){
+  if(!confirm('¿Eliminar cliente?'))return;
+  clientes.splice(i,1);renderClientes();guardarStorage();
+}
+function editarDirCliente(i){
+  const nueva=prompt('Nueva dirección:',clientes[i].dir);
+  if(nueva!==null){clientes[i].dir=nueva;renderClientes();guardarStorage();}
+}
+function renderClientes(){
+  const el=document.getElementById('clientes-list');
+  if(!clientes.length){el.innerHTML='<p style="color:var(--color-text-secondary);font-size:13px">Todavía no hay clientes.</p>';return;}
+  el.innerHTML=clientes.map((c,i)=>`
+    <div class="client-card">
+      <div><p style="font-weight:500;font-size:13px">${c.nombre}</p>
+        <p style="font-size:12px;color:var(--color-text-secondary)">${c.dir||'(sin dirección)'}</p>
+      </div>
+      <div style="display:flex;gap:5px">
+        <button class="btn" style="font-size:11px;padding:4px 8px" onclick="editarDirCliente(${i})">✎ Editar dirección</button>
+        <button class="btn-danger" style="padding:4px 8px" onclick="borrarCliente(${i})">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── Autocompletado ───────────────────────────────────────
+function sugerirCliente(){
+  const input=document.getElementById('ruta-nombre');
+  const val=input.value.toLowerCase();
+  const box=document.getElementById('sug-ruta');
+  if(!val||!clientes.length){box.style.display='none';return;}
+  const matches=clientes.filter(c=>c.nombre.toLowerCase().includes(val));
+  if(!matches.length){box.style.display='none';return;}
+  box.innerHTML=matches.map(c=>`<div class="suggestion" onmousedown="seleccionarCliente('${c.nombre.replace(/'/g,"\\'")}','${c.dir.replace(/'/g,"\\'")}')">
+    ${c.nombre}<span style="color:var(--color-text-secondary);font-size:11px;margin-left:6px">— ${c.dir}</span>
+  </div>`).join('');
+  box.style.display='block';
+}
+function seleccionarCliente(nombre,dir){
+  document.getElementById('ruta-nombre').value=nombre;
+  document.getElementById('ruta-dir').value=dir;
+  document.getElementById('sug-ruta').style.display='none';
+}
+document.addEventListener('click',e=>{
+  const box=document.getElementById('sug-ruta');
+  if(box&&!box.contains(e.target)&&e.target.id!=='ruta-nombre')box.style.display='none';
+});
+
+// ── Imprimir ─────────────────────────────────────────────
+function imprimirTurno(turno){
+  const hoy=fechaClave();
+  const lista=pedidos.filter(p=>p.fechaActual===hoy&&p.turno===turno);
+  if(!lista.length){alert('No hay pedidos en este turno');return;}
+  const label=turno==='manana'?'Mañana':'Tarde';
+  const win=window.open('','_blank');
+  win.document.write(`<html><head><title>Hoja de Ruta ${label} ${hoy}</title>
+  <style>body{font-family:Arial,sans-serif;font-size:12px;padding:24px;color:#111}
+  h2{margin-bottom:2px}p.sub{color:#666;font-size:11px;margin-bottom:16px}
+  table{width:100%;border-collapse:collapse}
+  th{background:#f5f5f5;text-align:left;padding:6px 8px;border:1px solid #ddd;font-size:11px}
+  td{padding:6px 8px;border:1px solid #ddd;vertical-align:top;font-size:11px}
+  .nota{color:#72243E;font-style:italic;margin-top:2px}
+  @media print{button{display:none!important}}</style></head><body>
+  <h2>Hoja de Ruta — ${label==='Mañana'?'☀ Mañana':'🌆 Tarde'}</h2>
+  <p class="sub">Fecha: ${fechaLinda(hoy)} &nbsp;|&nbsp; Impreso: ${new Date().toLocaleString('es-AR')}</p>
+  <table><thead><tr><th>#</th><th>Cliente</th><th>Dirección</th><th>Productos</th><th>Garrafa</th><th>Pedido especial</th><th>Repartidor</th><th>Origen</th></tr></thead>
+  <tbody>${lista.map((p,i)=>{
+    let gc='—';
+    if(p.tieneGarrafa&&p.garrafaEstado) gc=p.garrafaEstado==='paga'?'✓ Pagada':'Pendiente de pago';
+    let pc='—';
+    if(p.tienePedido){pc='⚠ Pedido especial';if(p.nota)pc+=`<div class="nota">📝 ${p.nota}</div>`;}
+    return`<tr><td>${i+1}</td><td><strong>${p.nombre}</strong></td><td>${p.dir}</td>
+    <td>${p.items.map(it=>`${it.cant}x ${it.prod}`).join('<br>')}</td>
+    <td>${gc}</td><td>${pc}</td><td>${p.rep}</td>
+    <td>${p.fechaOrigen!==p.fechaActual?'Desde '+p.fechaOrigen:'—'}</td></tr>`;
+  }).join('')}</tbody></table>
+  <br><button onclick="window.print()">🖨 Imprimir</button></body></html>`);
+  win.document.close();win.focus();
+}
+
+// ── Tabs ─────────────────────────────────────────────────
+function switchTab(tab,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  el.classList.add('active');
+  if(tab==='historial')renderHistorial();
+}
+
+// ── Storage ──────────────────────────────────────────────
+function guardarStorage(){
+  try{
+    localStorage.setItem('v5_pedidos',JSON.stringify(pedidos));
+    localStorage.setItem('v5_clientes',JSON.stringify(clientes));
+  }catch(e){}
+}
+function cargarStorage(){
+  try{
+    pedidos=JSON.parse(localStorage.getItem('v5_pedidos')||'[]');
+    clientes=JSON.parse(localStorage.getItem('v5_clientes')||'[]');
+  }catch(e){pedidos=[];clientes=[];}
+}
+
+cargarStorage();renderRuta();renderClientes();
+</script>
+</body></html>

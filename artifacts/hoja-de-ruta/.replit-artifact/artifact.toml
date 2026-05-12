@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Hoja de Ruta"
+version = "1.0.0"
+id = "artifacts/hoja-de-ruta"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21163
+
+[services.development]
+run = "pnpm --filter @workspace/hoja-de-ruta run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/hoja-de-ruta", "run", "build" ]
+publicDir = "artifacts/hoja-de-ruta/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21163"
+BASE_PATH = "/"

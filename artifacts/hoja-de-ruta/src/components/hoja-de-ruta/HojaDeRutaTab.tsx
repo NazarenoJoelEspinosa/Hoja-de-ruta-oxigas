@@ -1,0 +1,581 @@
+import { useState, useRef, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useListClientes,
+  useListPedidos,
+  useCreatePedido,
+  useUpdatePedido,
+  useDeletePedido,
+  getListClientesQueryKey,
+  getListPedidosQueryKey,
+  getGetTodayStatsQueryKey,
+  type Cliente,
+  type Pedido,
+  type PedidoItem,
+} from "@workspace/api-client-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { printShift } from "@/lib/print";
+import { getTodayKey, fechaLinda, sumarDia, restarDia } from "@/lib/dates";
+import { Printer, Trash2, ChevronRight, ChevronLeft, Plus, X } from "lucide-react";
+
+const GARRAFAS = [
+  "Garrafa 10 kg Total",
+  "Garrafa 10 kg YPF",
+  "Garrafa 15 kg",
+  "Garrafa 45 kg",
+  "Garrafa Clark Total",
+  "Garrafa Clark YPF",
+];
+const GASES = [
+  "Mix20 (ATAL)",
+  "Gas Carbónico",
+  "Oxígeno",
+  "Nitrógeno",
+  "Mix310 (Noxal)",
+  "Argón",
+  "Acetileno",
+];
+
+export default function HojaDeRutaTab() {
+  const today = getTodayKey();
+  const qc = useQueryClient();
+
+  const { data: clientes = [], isLoading: loadingClientes } = useListClientes({
+    query: { queryKey: getListClientesQueryKey() },
+  });
+  const { data: pedidos = [], isLoading: loadingPedidos } = useListPedidos(
+    { fecha: today },
+    { query: { queryKey: getListPedidosQueryKey({ fecha: today }) } }
+  );
+
+  const createPedido = useCreatePedido();
+  const updatePedido = useUpdatePedido();
+  const deletePedido = useDeletePedido();
+
+  // Form state
+  const [nombre, setNombre] = useState("");
+  const [dir, setDir] = useState("");
+  const [rep, setRep] = useState("Jose");
+  const [turno, setTurno] = useState<"manana" | "tarde">("manana");
+  const [items, setItems] = useState<PedidoItem[]>([]);
+  const [itemTipo, setItemTipo] = useState<"garrafa" | "gas">("garrafa");
+  const [itemProd, setItemProd] = useState(GARRAFAS[0]);
+  const [itemCant, setItemCant] = useState(1);
+  const [garrafaEstado, setGarrafaEstado] = useState<"pendiente" | "paga">("pendiente");
+  const [tienePedido, setTienePedido] = useState(false);
+  const [nota, setNota] = useState("");
+  const [suggestions, setSuggestions] = useState<Cliente[]>([]);
+  const [showSug, setShowSug] = useState(false);
+  const sugRef = useRef<HTMLDivElement>(null);
+
+  const hayGarrafa = items.some((it) => it.tipo === "garrafa");
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (sugRef.current && !sugRef.current.contains(e.target as Node)) {
+        setShowSug(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const onNombreInput = (val: string) => {
+    setNombre(val);
+    if (!val) { setSuggestions([]); setShowSug(false); return; }
+    const matches = clientes.filter((c) =>
+      c.nombre.toLowerCase().includes(val.toLowerCase())
+    );
+    setSuggestions(matches);
+    setShowSug(matches.length > 0);
+  };
+
+  const selectCliente = (c: Cliente) => {
+    setNombre(c.nombre);
+    setDir(c.dir ?? "");
+    setShowSug(false);
+  };
+
+  const addItem = () => {
+    setItems([...items, { tipo: itemTipo, prod: itemProd, cant: itemCant }]);
+    setItemCant(1);
+  };
+
+  const removeItem = (idx: number) => {
+    setItems(items.filter((_, i) => i !== idx));
+  };
+
+  const limpiar = () => {
+    setNombre(""); setDir(""); setRep("Jose"); setTurno("manana");
+    setItems([]); setItemTipo("garrafa"); setItemProd(GARRAFAS[0]); setItemCant(1);
+    setGarrafaEstado("pendiente"); setTienePedido(false); setNota("");
+  };
+
+  const guardar = () => {
+    if (!nombre.trim()) { alert("Completá el nombre del cliente"); return; }
+    if (!items.length) { alert("Agregá al menos un producto"); return; }
+    createPedido.mutate(
+      {
+        data: {
+          nombre: nombre.trim(),
+          dir: dir.trim() || undefined,
+          rep,
+          turno,
+          tienePedido,
+          nota: tienePedido ? nota : undefined,
+          tieneGarrafa: hayGarrafa,
+          garrafaEstado: hayGarrafa ? garrafaEstado : undefined,
+          items,
+          fechaOrigen: today,
+          fechaActual: today,
+        },
+      },
+      {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: getListPedidosQueryKey({ fecha: today }) });
+          qc.invalidateQueries({ queryKey: getListPedidosQueryKey() });
+          qc.invalidateQueries({ queryKey: getGetTodayStatsQueryKey() });
+          limpiar();
+        },
+      }
+    );
+  };
+
+  const moverAdelante = (p: Pedido) => {
+    let newTurno = p.turno;
+    let newFecha = p.fechaActual;
+    if (p.turno === "manana") {
+      newTurno = "tarde";
+    } else {
+      newTurno = "manana";
+      newFecha = sumarDia(p.fechaActual);
+    }
+    updatePedido.mutate(
+      { id: p.id, data: { turno: newTurno, fechaActual: newFecha } },
+      {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: getListPedidosQueryKey({ fecha: today }) });
+          qc.invalidateQueries({ queryKey: getGetTodayStatsQueryKey() });
+        },
+      }
+    );
+  };
+
+  const moverAtras = (p: Pedido) => {
+    let newTurno = p.turno;
+    let newFecha = p.fechaActual;
+    if (p.turno === "tarde") {
+      newTurno = "manana";
+    } else {
+      const diaAnt = restarDia(p.fechaActual);
+      if (diaAnt < today) { alert("No se puede volver más atrás de hoy"); return; }
+      newTurno = "tarde";
+      newFecha = diaAnt;
+    }
+    updatePedido.mutate(
+      { id: p.id, data: { turno: newTurno, fechaActual: newFecha } },
+      {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: getListPedidosQueryKey({ fecha: today }) });
+          qc.invalidateQueries({ queryKey: getGetTodayStatsQueryKey() });
+        },
+      }
+    );
+  };
+
+  const borrar = (id: number) => {
+    if (!confirm("¿Eliminar este pedido?")) return;
+    deletePedido.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: getListPedidosQueryKey({ fecha: today }) });
+          qc.invalidateQueries({ queryKey: getGetTodayStatsQueryKey() });
+        },
+      }
+    );
+  };
+
+  const pedidosManana = pedidos.filter((p) => p.turno === "manana");
+  const pedidosTarde = pedidos.filter((p) => p.turno === "tarde");
+
+  const prodOptions = itemTipo === "garrafa" ? GARRAFAS : GASES;
+
+  return (
+    <div className="space-y-6">
+      {/* Nuevo Pedido Form */}
+      <div className="border border-border rounded-lg bg-card p-4 space-y-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Nuevo pedido</h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Cliente autocomplete */}
+          <div className="relative" ref={sugRef}>
+            <Label className="text-xs text-muted-foreground mb-1 block">Cliente</Label>
+            <Input
+              data-testid="input-cliente"
+              value={nombre}
+              onChange={(e) => onNombreInput(e.target.value)}
+              onFocus={() => nombre && setShowSug(suggestions.length > 0)}
+              placeholder="Escribí el nombre..."
+              autoComplete="off"
+            />
+            {showSug && (
+              <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-card border border-border rounded shadow-md max-h-36 overflow-y-auto">
+                {suggestions.map((c) => (
+                  <div
+                    key={c.id}
+                    className="px-3 py-2 cursor-pointer hover:bg-muted text-sm"
+                    onMouseDown={() => selectCliente(c)}
+                  >
+                    <span className="font-medium">{c.nombre}</span>
+                    {c.dir && <span className="text-muted-foreground text-xs ml-2">— {c.dir}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground mb-1 block">Dirección</Label>
+            <Input
+              data-testid="input-dir"
+              value={dir}
+              onChange={(e) => setDir(e.target.value)}
+              placeholder="Se completa automático"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label className="text-xs text-muted-foreground mb-1 block">Repartidor</Label>
+            <Select value={rep} onValueChange={setRep}>
+              <SelectTrigger data-testid="select-rep">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Jose">José</SelectItem>
+                <SelectItem value="Claudio">Claudio</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground mb-1 block">Turno</Label>
+            <Select value={turno} onValueChange={(v) => setTurno(v as "manana" | "tarde")}>
+              <SelectTrigger data-testid="select-turno">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="manana">☀ Mañana</SelectItem>
+                <SelectItem value="tarde">🌆 Tarde</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Product builder */}
+        <div className="border-t border-border pt-3 space-y-2">
+          <p className="text-xs text-muted-foreground">Productos — agregá uno o más</p>
+          <div className="grid grid-cols-[1fr_2fr_80px_auto] gap-2 items-end">
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1 block">Tipo</Label>
+              <Select
+                value={itemTipo}
+                onValueChange={(v) => {
+                  const t = v as "garrafa" | "gas";
+                  setItemTipo(t);
+                  setItemProd(t === "garrafa" ? GARRAFAS[0] : GASES[0]);
+                }}
+              >
+                <SelectTrigger data-testid="select-item-tipo">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="garrafa">Garrafa</SelectItem>
+                  <SelectItem value="gas">Gas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1 block">Producto</Label>
+              <Select value={itemProd} onValueChange={setItemProd}>
+                <SelectTrigger data-testid="select-item-prod">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {prodOptions.map((p) => (
+                    <SelectItem key={p} value={p}>{p}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1 block">Cant.</Label>
+              <Input
+                data-testid="input-item-cant"
+                type="number"
+                min={1}
+                value={itemCant}
+                onChange={(e) => setItemCant(parseInt(e.target.value) || 1)}
+              />
+            </div>
+            <Button variant="outline" size="sm" onClick={addItem} data-testid="button-add-item" className="h-9">
+              <Plus className="h-4 w-4 mr-1" /> Agregar
+            </Button>
+          </div>
+
+          {items.length > 0 && (
+            <div className="bg-muted rounded p-2 space-y-1">
+              {items.map((it, i) => (
+                <div key={i} className="flex items-center justify-between text-sm py-1 border-b border-border last:border-0">
+                  <span className="flex items-center gap-2">
+                    <ItemBadge tipo={it.tipo} />
+                    {it.prod}
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span className="font-semibold">x{it.cant}</span>
+                    <button
+                      className="text-destructive hover:text-destructive/80"
+                      onClick={() => removeItem(i)}
+                      data-testid={`button-remove-item-${i}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Garrafa estado */}
+        {hayGarrafa && (
+          <div className="bg-blue-50 border border-blue-200 rounded p-3">
+            <Label className="text-xs font-medium text-blue-700 mb-2 block">Estado de garrafa</Label>
+            <Select value={garrafaEstado} onValueChange={(v) => setGarrafaEstado(v as "pendiente" | "paga")}>
+              <SelectTrigger data-testid="select-garrafa-estado" className="bg-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pendiente">Garrafa pendiente de pago</SelectItem>
+                <SelectItem value="paga">Garrafa pagada</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Pedido especial */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 cursor-pointer text-sm" data-testid="toggle-pedido-especial">
+            <input
+              type="checkbox"
+              checked={tienePedido}
+              onChange={(e) => setTienePedido(e.target.checked)}
+              className="rounded"
+            />
+            Tiene pedido especial (nota)
+          </label>
+          {tienePedido && (
+            <Textarea
+              data-testid="textarea-nota"
+              value={nota}
+              onChange={(e) => setNota(e.target.value)}
+              placeholder="Ej: pedir factura, entregar también alambre, etc."
+              rows={2}
+            />
+          )}
+        </div>
+
+        <div className="flex gap-2 justify-end">
+          <Button variant="outline" size="sm" onClick={limpiar} data-testid="button-limpiar">
+            Limpiar
+          </Button>
+          <Button size="sm" onClick={guardar} disabled={createPedido.isPending} data-testid="button-guardar">
+            {createPedido.isPending ? "Guardando..." : "✓ Guardar pedido"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Turno Mañana */}
+      <TurnoSection
+        label="☀ Mañana"
+        turno="manana"
+        pedidos={pedidosManana}
+        loading={loadingPedidos}
+        today={today}
+        onAdelante={moverAdelante}
+        onAtras={moverAtras}
+        onBorrar={borrar}
+        fecha={fechaLinda(today)}
+      />
+
+      {/* Turno Tarde */}
+      <TurnoSection
+        label="🌆 Tarde"
+        turno="tarde"
+        pedidos={pedidosTarde}
+        loading={loadingPedidos}
+        today={today}
+        onAdelante={moverAdelante}
+        onAtras={moverAtras}
+        onBorrar={borrar}
+        fecha=""
+      />
+    </div>
+  );
+}
+
+function ItemBadge({ tipo }: { tipo: "garrafa" | "gas" }) {
+  if (tipo === "garrafa") {
+    return <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-medium">Garrafa</span>;
+  }
+  return <span className="text-xs px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 font-medium">Gas</span>;
+}
+
+function GarrafaBadge({ estado }: { estado: string | null | undefined }) {
+  if (!estado) return <span className="text-muted-foreground">—</span>;
+  if (estado === "paga") {
+    return <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-800 font-medium">✓ Pagada</span>;
+  }
+  return <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-medium">Pendiente</span>;
+}
+
+function TurnoSection({
+  label, turno, pedidos, loading, today, onAdelante, onAtras, onBorrar, fecha,
+}: {
+  label: string;
+  turno: "manana" | "tarde";
+  pedidos: Pedido[];
+  loading: boolean;
+  today: string;
+  onAdelante: (p: Pedido) => void;
+  onAtras: (p: Pedido) => void;
+  onBorrar: (id: number) => void;
+  fecha: string;
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-2">
+        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${turno === "manana" ? "bg-sky-100 text-sky-800" : "bg-amber-100 text-amber-800"}`}>
+          {label}
+        </span>
+        {fecha && <span className="text-sm text-muted-foreground">{fecha}</span>}
+        <button
+          className="ml-auto flex items-center gap-1 text-xs border border-border rounded px-2.5 py-1 hover:bg-muted text-muted-foreground"
+          onClick={() => printShift(label, today, pedidos)}
+          data-testid={`button-print-${turno}`}
+        >
+          <Printer className="h-3.5 w-3.5" /> Imprimir
+        </button>
+      </div>
+
+      <div className="border border-border rounded-lg overflow-hidden bg-card">
+        {loading ? (
+          <div className="p-4 space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        ) : pedidos.length === 0 ? (
+          <div className="text-center py-8 text-sm text-muted-foreground">Sin pedidos para este turno</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/40">
+                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground w-8">#</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Cliente</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground hidden sm:table-cell">Dirección</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Productos</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Garrafa</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground hidden md:table-cell">Pedido especial</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground hidden sm:table-cell">Rep.</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground hidden lg:table-cell">Origen</th>
+                  <th className="px-3 py-2 text-xs font-medium text-muted-foreground"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {pedidos.map((p, i) => {
+                  const lblAd = p.turno === "manana" ? "→ Tarde" : "→ Mañana sig.";
+                  const lblAt = p.turno === "tarde" ? "← Mañana" : "← Tarde ant.";
+                  const puedeAtras = !(p.turno === "manana" && p.fechaActual === today);
+                  const esAnterior = p.fechaOrigen !== p.fechaActual;
+
+                  return (
+                    <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/20" data-testid={`row-pedido-${p.id}`}>
+                      <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
+                      <td className="px-3 py-2 font-medium whitespace-nowrap">{p.nombre}</td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground hidden sm:table-cell">{p.dir}</td>
+                      <td className="px-3 py-2">
+                        <div className="flex flex-wrap gap-1">
+                          {p.items.map((it, j) => (
+                            <span
+                              key={j}
+                              className={`text-xs px-1.5 py-0.5 rounded font-medium ${it.tipo === "garrafa" ? "bg-blue-100 text-blue-800" : "bg-orange-100 text-orange-800"}`}
+                            >
+                              {it.cant}x {it.prod}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2">
+                        {p.tieneGarrafa ? <GarrafaBadge estado={p.garrafaEstado} /> : <span className="text-muted-foreground">—</span>}
+                      </td>
+                      <td className="px-3 py-2 hidden md:table-cell">
+                        {p.tienePedido ? (
+                          <div>
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 font-medium">Pedido</span>
+                            {p.nota && <p className="text-xs text-muted-foreground mt-0.5 max-w-[140px] truncate">{p.nota}</p>}
+                          </div>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </td>
+                      <td className="px-3 py-2 text-xs whitespace-nowrap hidden sm:table-cell">{p.rep}</td>
+                      <td className="px-3 py-2 hidden lg:table-cell">
+                        {esAnterior
+                          ? <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Desde {p.fechaOrigen}</span>
+                          : <span className="text-xs text-muted-foreground">Hoy</span>}
+                      </td>
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-1">
+                          {puedeAtras && (
+                            <button
+                              className="text-xs border border-border rounded px-1.5 py-0.5 hover:bg-muted text-primary"
+                              onClick={() => onAtras(p)}
+                              title={lblAt}
+                              data-testid={`button-atras-${p.id}`}
+                            >
+                              <ChevronLeft className="h-3.5 w-3.5 inline" /> {lblAt}
+                            </button>
+                          )}
+                          <button
+                            className="text-xs border border-amber-300 bg-amber-50 rounded px-1.5 py-0.5 hover:bg-amber-100 text-amber-800"
+                            onClick={() => onAdelante(p)}
+                            title={lblAd}
+                            data-testid={`button-adelante-${p.id}`}
+                          >
+                            {lblAd} <ChevronRight className="h-3.5 w-3.5 inline" />
+                          </button>
+                          <button
+                            className="text-destructive hover:text-destructive/80 p-0.5"
+                            onClick={() => onBorrar(p.id)}
+                            data-testid={`button-borrar-${p.id}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

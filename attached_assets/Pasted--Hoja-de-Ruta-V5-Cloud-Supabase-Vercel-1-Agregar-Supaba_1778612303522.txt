@@ -1,0 +1,250 @@
+# Hoja de Ruta V5 → Cloud (Supabase + Vercel)
+
+## 1) Agregar Supabase en `<head>`
+
+Pegá esto antes de `</head>`:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+```
+
+---
+
+## 2) Reemplazar el bloque inicial de variables dentro de `<script>`
+
+### Buscá:
+
+```js
+let clientes=[], pedidos=[], itemsTemp=[];
+```
+
+### Cambialo por:
+
+```js
+const SUPABASE_URL = "https://xakmcrbvrvfzuxvhnizd.supabase.co";
+const SUPABASE_KEY = "sb_publishable_K66fXdPDQ46_YollN7cIXQ_6TVGdtqi";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let clientes=[], pedidos=[], itemsTemp=[];
+```
+
+---
+
+## 3) Reemplazar `guardarCliente()` completo
+
+```js
+async function guardarCliente(){
+  const nombre=document.getElementById('cli-nombre').value.trim();
+  const dir=document.getElementById('cli-dir').value.trim();
+  if(!nombre){alert('Ingresá el nombre');return;}
+  if(clientes.find(c=>c.nombre.toLowerCase()===nombre.toLowerCase())){alert('Ya existe ese cliente');return;}
+
+  const { data, error } = await supabaseClient
+    .from('clientes')
+    .insert([{ nombre, dir }])
+    .select();
+
+  if(error){
+    alert('Error al guardar cliente');
+    console.error(error);
+    return;
+  }
+
+  clientes.push(data[0]);
+  document.getElementById('cli-nombre').value='';
+  document.getElementById('cli-dir').value='';
+  renderClientes();
+}
+```
+
+---
+
+## 4) Reemplazar `guardarPedido()` completo
+
+```js
+async function guardarPedido(){
+  const nombre=document.getElementById('ruta-nombre').value.trim();
+  if(!nombre){alert('Completá el nombre del cliente');return;}
+  if(!itemsTemp.length){alert('Agregá al menos un producto con el botón "+ Agregar ítem"');return;}
+
+  const tienePedido=document.getElementById('chk-pedido').checked;
+  const tieneGarrafa=hayGarrafa();
+  const hoy=fechaClave();
+
+  const nuevoPedido={
+    nombre,
+    dir:document.getElementById('ruta-dir').value.trim(),
+    rep:document.getElementById('ruta-rep').value,
+    turno:document.getElementById('ruta-turno').value,
+    tienePedido,
+    nota:tienePedido?document.getElementById('ruta-nota').value.trim():'',
+    tieneGarrafa,
+    garrafaEstado:tieneGarrafa?document.getElementById('ruta-garrafa-estado').value:'',
+    items:[...itemsTemp],
+    fechaOrigen:hoy,
+    fechaActual:hoy
+  };
+
+  const { data, error } = await supabaseClient
+    .from('pedidos')
+    .insert([nuevoPedido])
+    .select();
+
+  if(error){
+    alert('Error al guardar pedido');
+    console.error(error);
+    return;
+  }
+
+  pedidos.push(data[0]);
+
+  if(!clientes.find(c=>c.nombre.toLowerCase()===nombre.toLowerCase())){
+    const { data: cliData } = await supabaseClient
+      .from('clientes')
+      .insert([{ nombre, dir:nuevoPedido.dir }])
+      .select();
+
+    if(cliData) clientes.push(cliData[0]);
+    renderClientes();
+  }
+
+  limpiarForm();
+  renderRuta();
+}
+```
+
+---
+
+## 5) Reemplazar `borrarPedido(id)`
+
+```js
+async function borrarPedido(id){
+  if(!confirm('¿Eliminar este pedido?'))return;
+
+  const { error } = await supabaseClient
+    .from('pedidos')
+    .delete()
+    .eq('id', id);
+
+  if(error){
+    alert('Error al eliminar');
+    return;
+  }
+
+  pedidos = pedidos.filter(p => p.id !== id);
+  renderRuta();
+}
+```
+
+---
+
+## 6) Reemplazar Storage completo
+
+### Eliminá TODO esto:
+
+```js
+function guardarStorage(){
+  try{
+    localStorage.setItem('v5_pedidos',JSON.stringify(pedidos));
+    localStorage.setItem('v5_clientes',JSON.stringify(clientes));
+  }catch(e){}
+}
+function cargarStorage(){
+  try{
+    pedidos=JSON.parse(localStorage.getItem('v5_pedidos')||'[]');
+    clientes=JSON.parse(localStorage.getItem('v5_clientes')||'[]');
+  }catch(e){pedidos=[];clientes=[];}
+}
+
+cargarStorage();renderRuta();renderClientes();
+```
+
+### Y pegá esto:
+
+```js
+function guardarStorage(){
+  // Supabase reemplaza localStorage
+}
+
+async function cargarStorage(){
+  try{
+    const { data: pedidosData, error: pedidosError } = await supabaseClient
+      .from('pedidos')
+      .select('*')
+      .order('id', { ascending: true });
+
+    const { data: clientesData, error: clientesError } = await supabaseClient
+      .from('clientes')
+      .select('*');
+
+    if(pedidosError) throw pedidosError;
+    if(clientesError) throw clientesError;
+
+    pedidos = pedidosData || [];
+    clientes = clientesData || [];
+
+  }catch(e){
+    console.error(e);
+    pedidos=[];
+    clientes=[];
+  }
+
+  renderRuta();
+  renderClientes();
+}
+
+cargarStorage();
+```
+
+---
+
+## 7) IMPORTANTE — SQL tablas correctas
+
+En Supabase SQL Editor usá esto:
+
+```sql
+create table clientes (
+  id bigint generated always as identity primary key,
+  nombre text not null,
+  dir text
+);
+
+create table pedidos (
+  id bigint generated always as identity primary key,
+  nombre text not null,
+  dir text,
+  rep text,
+  turno text,
+  tienePedido boolean default false,
+  nota text,
+  tieneGarrafa boolean default false,
+  garrafaEstado text,
+  items jsonb,
+  fechaOrigen text,
+  fechaActual text
+);
+```
+
+---
+
+# 🚀 Resultado:
+
+## Ahora tu hoja de ruta:
+
+### ✅ Funciona en varias PCs
+
+### ✅ Funciona en celular
+
+### ✅ Tiempo real al recargar
+
+### ✅ Gratis
+
+### ✅ Misma estructura simple
+
+---
+
+# 🎯 Siguiente nivel recomendado:
+
+## Vercel:
+
+Subí el HTML y ya queda online para todos.
