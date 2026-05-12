@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, pedidosTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, gt } from "drizzle-orm";
 import {
   ListPedidosQueryParams,
   CreatePedidoBody,
@@ -137,6 +137,29 @@ router.get("/pedidos/stats/today", async (req, res) => {
   ).length;
 
   res.json({ totalManana, totalTarde, totalPedidos, garrafasPendientes, garrafasPagas });
+});
+
+router.get("/pedidos/futuros", async (req, res) => {
+  const today = new Date();
+  const fecha = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const pedidos = await db
+    .select()
+    .from(pedidosTable)
+    .where(gt(pedidosTable.fechaActual, fecha))
+    .orderBy(pedidosTable.fechaActual, pedidosTable.turno, pedidosTable.id);
+
+  const grouped: Record<string, typeof pedidos> = {};
+  for (const pedido of pedidos) {
+    if (!grouped[pedido.fechaActual]) grouped[pedido.fechaActual] = [];
+    grouped[pedido.fechaActual].push(pedido);
+  }
+
+  const result = Object.keys(grouped)
+    .sort()
+    .map((f) => ({ fecha: f, pedidos: grouped[f] }));
+
+  res.json(result);
 });
 
 router.get("/pedidos/historial", async (req, res) => {

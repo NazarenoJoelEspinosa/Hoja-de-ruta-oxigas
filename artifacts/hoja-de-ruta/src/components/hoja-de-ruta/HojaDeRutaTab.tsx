@@ -3,15 +3,18 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   useListClientes,
   useListPedidos,
+  useGetFuturos,
   useCreatePedido,
   useUpdatePedido,
   useDeletePedido,
   getListClientesQueryKey,
   getListPedidosQueryKey,
   getGetTodayStatsQueryKey,
+  getGetFuturosQueryKey,
   type Cliente,
   type Pedido,
   type PedidoItem,
+  type HistorialDia,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { printShift } from "@/lib/print";
 import { getTodayKey, fechaLinda, sumarDia, restarDia } from "@/lib/dates";
-import { Printer, Trash2, ChevronRight, ChevronLeft, Plus, X } from "lucide-react";
+import { Printer, Trash2, ChevronRight, ChevronLeft, Plus, X, Clock } from "lucide-react";
 
 const GARRAFAS = [
   "Garrafa 10 kg Total",
@@ -53,6 +56,9 @@ export default function HojaDeRutaTab() {
     { fecha: today },
     { query: { queryKey: getListPedidosQueryKey({ fecha: today }) } }
   );
+  const { data: futuros = [] } = useGetFuturos({
+    query: { queryKey: getGetFuturosQueryKey() },
+  });
 
   const createPedido = useCreatePedido();
   const updatePedido = useUpdatePedido();
@@ -147,6 +153,12 @@ export default function HojaDeRutaTab() {
     );
   };
 
+  const invalidateAll = () => {
+    qc.invalidateQueries({ queryKey: getListPedidosQueryKey({ fecha: today }) });
+    qc.invalidateQueries({ queryKey: getGetTodayStatsQueryKey() });
+    qc.invalidateQueries({ queryKey: getGetFuturosQueryKey() });
+  };
+
   const moverAdelante = (p: Pedido) => {
     let newTurno = p.turno;
     let newFecha = p.fechaActual;
@@ -158,12 +170,7 @@ export default function HojaDeRutaTab() {
     }
     updatePedido.mutate(
       { id: p.id, data: { turno: newTurno, fechaActual: newFecha } },
-      {
-        onSuccess: () => {
-          qc.invalidateQueries({ queryKey: getListPedidosQueryKey({ fecha: today }) });
-          qc.invalidateQueries({ queryKey: getGetTodayStatsQueryKey() });
-        },
-      }
+      { onSuccess: invalidateAll }
     );
   };
 
@@ -180,12 +187,7 @@ export default function HojaDeRutaTab() {
     }
     updatePedido.mutate(
       { id: p.id, data: { turno: newTurno, fechaActual: newFecha } },
-      {
-        onSuccess: () => {
-          qc.invalidateQueries({ queryKey: getListPedidosQueryKey({ fecha: today }) });
-          qc.invalidateQueries({ queryKey: getGetTodayStatsQueryKey() });
-        },
-      }
+      { onSuccess: invalidateAll }
     );
   };
 
@@ -193,12 +195,7 @@ export default function HojaDeRutaTab() {
     if (!confirm("¿Eliminar este pedido?")) return;
     deletePedido.mutate(
       { id },
-      {
-        onSuccess: () => {
-          qc.invalidateQueries({ queryKey: getListPedidosQueryKey({ fecha: today }) });
-          qc.invalidateQueries({ queryKey: getGetTodayStatsQueryKey() });
-        },
-      }
+      { onSuccess: invalidateAll }
     );
   };
 
@@ -426,6 +423,15 @@ export default function HojaDeRutaTab() {
         onBorrar={borrar}
         fecha=""
       />
+
+      {/* Postergados */}
+      {futuros.length > 0 && (
+        <PostergadosSection
+          dias={futuros}
+          onTraerDeVuelta={moverAtras}
+          onBorrar={borrar}
+        />
+      )}
     </div>
   );
 }
@@ -575,6 +581,90 @@ function TurnoSection({
             </table>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function PostergadosSection({
+  dias,
+  onTraerDeVuelta,
+  onBorrar,
+}: {
+  dias: HistorialDia[];
+  onTraerDeVuelta: (p: Pedido) => void;
+  onBorrar: (id: number) => void;
+}) {
+  const total = dias.reduce((acc, d) => acc + d.pedidos.length, 0);
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-2">
+        <Clock className="h-4 w-4 text-rose-500" />
+        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-100 text-rose-800">
+          Postergados
+        </span>
+        <span className="text-sm text-muted-foreground">{total} pedido{total !== 1 ? "s" : ""} en días futuros</span>
+      </div>
+
+      <div className="border border-rose-200 rounded-lg overflow-hidden bg-card">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-rose-50/60">
+                <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Fecha</th>
+                <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Cliente</th>
+                <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground hidden sm:table-cell">Dirección</th>
+                <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Turno</th>
+                <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Productos</th>
+                <th className="px-3 py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {dias.map((dia) =>
+                dia.pedidos.map((p) => (
+                  <tr key={p.id} className="border-b border-border last:border-0 hover:bg-rose-50/30">
+                    <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
+                      {fechaLinda(dia.fecha)}
+                    </td>
+                    <td className="px-3 py-2 font-medium whitespace-nowrap">{p.nombre}</td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground hidden sm:table-cell">{p.dir ?? "—"}</td>
+                    <td className="px-3 py-2">
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${p.turno === "manana" ? "bg-sky-100 text-sky-800" : "bg-amber-100 text-amber-800"}`}>
+                        {p.turno === "manana" ? "☀ Mañana" : "🌆 Tarde"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-wrap gap-1">
+                        {p.items.map((it, i) => (
+                          <span key={i} className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                            {it.cant}x {it.prod}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-1">
+                        <button
+                          className="text-xs border border-sky-300 bg-sky-50 rounded px-1.5 py-0.5 hover:bg-sky-100 text-sky-800 whitespace-nowrap"
+                          onClick={() => onTraerDeVuelta(p)}
+                          title="Traer de vuelta al turno anterior"
+                        >
+                          <ChevronLeft className="h-3.5 w-3.5 inline" /> Traer
+                        </button>
+                        <button
+                          className="text-destructive hover:text-destructive/80 p-0.5"
+                          onClick={() => onBorrar(p.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

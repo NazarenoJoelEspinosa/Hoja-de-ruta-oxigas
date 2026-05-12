@@ -199,6 +199,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/TodayStats"
 
+  /pedidos/futuros:
+    get:
+      operationId: getFuturos
+      tags: [pedidos]
+      summary: Get orders scheduled for future dates (fechaActual > today), grouped by date
+      responses:
+        "200":
+          description: Future orders grouped by date
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HistorialDia"
+
   /pedidos/historial:
     get:
       operationId: getHistorial

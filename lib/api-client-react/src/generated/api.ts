@@ -873,6 +873,81 @@ export function useGetTodayStats<
 }
 
 /**
+ * @summary Get orders scheduled for future dates (fechaActual > today), grouped by date
+ */
+export const getGetFuturosUrl = () => {
+  return `/api/pedidos/futuros`;
+};
+
+export const getFuturos = async (
+  options?: RequestInit,
+): Promise<HistorialDia[]> => {
+  return customFetch<HistorialDia[]>(getGetFuturosUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetFuturosQueryKey = () => {
+  return [`/api/pedidos/futuros`] as const;
+};
+
+export const getGetFuturosQueryOptions = <
+  TData = Awaited<ReturnType<typeof getFuturos>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getFuturos>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetFuturosQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getFuturos>>> = ({
+    signal,
+  }) => getFuturos({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getFuturos>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetFuturosQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getFuturos>>
+>;
+export type GetFuturosQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get orders scheduled for future dates (fechaActual > today), grouped by date
+ */
+
+export function useGetFuturos<
+  TData = Awaited<ReturnType<typeof getFuturos>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getFuturos>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetFuturosQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary Get order history grouped by fechaOrigen
  */
 export const getGetHistorialUrl = () => {

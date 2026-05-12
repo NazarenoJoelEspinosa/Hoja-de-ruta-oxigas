@@ -174,6 +174,43 @@ export const GetTodayStatsResponse = zod.object({
 });
 
 /**
+ * @summary Get orders scheduled for future dates (fechaActual > today), grouped by date
+ */
+
+export const GetFuturosResponseItem = zod.object({
+  fecha: zod.string(),
+  pedidos: zod.array(
+    zod.object({
+      id: zod.number(),
+      nombre: zod.string(),
+      dir: zod.string().nullable(),
+      rep: zod.string(),
+      turno: zod.enum(["manana", "tarde"]),
+      tienePedido: zod.boolean(),
+      nota: zod.string().nullish(),
+      tieneGarrafa: zod.boolean(),
+      garrafaEstado: zod
+        .union([
+          zod.literal("pendiente"),
+          zod.literal("paga"),
+          zod.literal(null),
+        ])
+        .nullish(),
+      items: zod.array(
+        zod.object({
+          tipo: zod.enum(["garrafa", "gas"]),
+          prod: zod.string(),
+          cant: zod.number().min(1),
+        }),
+      ),
+      fechaOrigen: zod.string(),
+      fechaActual: zod.string(),
+    }),
+  ),
+});
+export const GetFuturosResponse = zod.array(GetFuturosResponseItem);
+
+/**
  * @summary Get order history grouped by fechaOrigen
  */
 
