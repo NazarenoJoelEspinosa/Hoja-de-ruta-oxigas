@@ -229,8 +229,8 @@ importers:
         specifier: ^5.0.4
         version: 5.1.4(vite@7.3.2(@types/node@25.3.5)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)(yaml@2.8.2))
       '@workspace/api-client-react':
-        specifier: file:../../lib/api-client-react/src
-        version: src@file:lib/api-client-react/src
+        specifier: file:../../lib/api-client-react
+        version: link:../../lib/api-client-react
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -3519,9 +3519,6 @@ packages:
     resolution: {integrity: sha512-UcjcJOWknrNkF6PLX83qcHM6KHgVKNkV62Y8a5uYDVv9ydGQVwAHMKqHdJje1VTWpljG0WYpCDhrCdAOYH4TWg==}
     engines: {node: '>= 10.x'}
 
-  src@file:lib/api-client-react/src:
-    resolution: {directory: lib/api-client-react/src, type: directory}
-
   statuses@2.0.2:
     resolution: {integrity: sha512-DvEy55V3DB7uknRo+4iOGT5fP1slR8wQohVdknigZPMpMstaKJQWhwiYBACJE3Ul2pTnATihhBYnRhZQHGBiRw==}
     engines: {node: '>= 0.8'}
@@ -6589,8 +6586,6 @@ snapshots:
   source-map@0.6.1: {}
 
   split2@4.2.0: {}
-
-  src@file:lib/api-client-react/src: {}
 
   statuses@2.0.2: {}
 
