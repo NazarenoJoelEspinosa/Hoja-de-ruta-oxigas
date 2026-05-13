@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm install -g pnpm && pnpm install && pnpm --filter @workspace/api-server build"
+buildCommand = "npm install -g pnpm@9 && pnpm install --no-frozen-lockfile && pnpm --filter @workspace/api-server build"
 
 [deploy]
 startCommand = "node artifacts/api-server/dist/index.mjs"
