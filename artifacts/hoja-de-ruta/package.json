@@ -70,5 +70,6 @@
     "vite": "catalog:",
     "wouter": "^3.3.5",
     "zod": "catalog:"
-  }
+  },
+  "packageManager": "pnpm@9.0.0"
 }
