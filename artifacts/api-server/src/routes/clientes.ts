@@ -25,7 +25,7 @@ router.post("/clientes", async (req, res) => {
     return;
   }
 
-  const { nombre, dir, horario } = parsed.data;
+  const { nombre, dirs, horario } = parsed.data;
 
   const existing = await db
     .select()
@@ -40,7 +40,7 @@ router.post("/clientes", async (req, res) => {
 
   const [cliente] = await db
     .insert(clientesTable)
-    .values({ nombre, dir: dir ?? null, horario: horario ?? null })
+    .values({ nombre, dirs: dirs ?? [], horario: horario ?? null })
     .returning();
 
   res.status(201).json(cliente);
@@ -59,9 +59,14 @@ router.patch("/clientes/:id", async (req, res) => {
     return;
   }
 
+  const updateData: Record<string, unknown> = {};
+  if (body.data.nombre !== undefined) updateData.nombre = body.data.nombre;
+  if (body.data.dirs !== undefined) updateData.dirs = body.data.dirs;
+  if (body.data.horario !== undefined) updateData.horario = body.data.horario;
+
   const [updated] = await db
     .update(clientesTable)
-    .set(body.data)
+    .set(updateData)
     .where(eq(clientesTable.id, params.data.id))
     .returning();
 

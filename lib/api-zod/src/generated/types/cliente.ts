@@ -9,8 +9,8 @@
 export interface Cliente {
   id: number;
   nombre: string;
-  /** @nullable */
-  dir: string | null;
+  /** List of known delivery addresses for this client */
+  dirs: string[];
   /** @nullable */
   horario?: string | null;
 }

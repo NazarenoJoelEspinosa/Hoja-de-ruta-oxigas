@@ -9,6 +9,6 @@
 export interface ClienteInput {
   /** @minLength 1 */
   nombre: string;
-  dir?: string;
+  dirs?: string[];
   horario?: string;
 }

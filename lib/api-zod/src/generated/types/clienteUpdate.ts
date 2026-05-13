@@ -8,6 +8,6 @@
 
 export interface ClienteUpdate {
   nombre?: string;
-  dir?: string;
+  dirs?: string[];
   horario?: string;
 }

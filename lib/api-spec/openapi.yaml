@@ -241,14 +241,17 @@ components:
 
     Cliente:
       type: object
-      required: [id, nombre, dir]
+      required: [id, nombre, dirs]
       properties:
         id:
           type: integer
         nombre:
           type: string
-        dir:
-          type: ["string", "null"]
+        dirs:
+          type: array
+          items:
+            type: string
+          description: List of known delivery addresses for this client
         horario:
           type: ["string", "null"]
 
@@ -259,8 +262,10 @@ components:
         nombre:
           type: string
           minLength: 1
-        dir:
-          type: string
+        dirs:
+          type: array
+          items:
+            type: string
         horario:
           type: string
 
@@ -269,8 +274,10 @@ components:
       properties:
         nombre:
           type: string
-        dir:
-          type: string
+        dirs:
+          type: array
+          items:
+            type: string
         horario:
           type: string
 

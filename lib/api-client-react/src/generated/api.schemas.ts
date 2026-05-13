@@ -12,8 +12,8 @@ export interface HealthStatus {
 export interface Cliente {
   id: number;
   nombre: string;
-  /** @nullable */
-  dir: string | null;
+  /** List of known delivery addresses for this client */
+  dirs: string[];
   /** @nullable */
   horario?: string | null;
 }
@@ -21,13 +21,13 @@ export interface Cliente {
 export interface ClienteInput {
   /** @minLength 1 */
   nombre: string;
-  dir?: string;
+  dirs?: string[];
   horario?: string;
 }
 
 export interface ClienteUpdate {
   nombre?: string;
-  dir?: string;
+  dirs?: string[];
   horario?: string;
 }
 

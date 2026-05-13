@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Pencil, Trash2, Clock } from "lucide-react";
+import { Pencil, Trash2, Clock, Plus, X } from "lucide-react";
 
 export default function ClientesTab() {
   const qc = useQueryClient();
@@ -27,14 +27,17 @@ export default function ClientesTab() {
   const [nombre, setNombre] = useState("");
   const [dir, setDir] = useState("");
   const [horario, setHorario] = useState("");
+
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editDir, setEditDir] = useState("");
+  const [editDirs, setEditDirs] = useState<string[]>([]);
+  const [editDirInput, setEditDirInput] = useState("");
   const [editHorario, setEditHorario] = useState("");
 
   const guardar = () => {
     if (!nombre.trim()) { alert("Ingresá el nombre"); return; }
+    const dirs = dir.trim() ? [dir.trim()] : [];
     createCliente.mutate(
-      { data: { nombre: nombre.trim(), dir: dir.trim() || undefined, horario: horario.trim() || undefined } },
+      { data: { nombre: nombre.trim(), dirs, horario: horario.trim() || undefined } },
       {
         onSuccess: () => {
           qc.invalidateQueries({ queryKey: getListClientesQueryKey() });
@@ -52,13 +55,28 @@ export default function ClientesTab() {
 
   const startEdit = (c: Cliente) => {
     setEditingId(c.id);
-    setEditDir(c.dir ?? "");
+    setEditDirs([...(c.dirs ?? [])]);
+    setEditDirInput("");
     setEditHorario(c.horario ?? "");
   };
 
+  const addEditDir = () => {
+    const v = editDirInput.trim();
+    if (!v || editDirs.includes(v)) return;
+    setEditDirs([...editDirs, v]);
+    setEditDirInput("");
+  };
+
+  const removeEditDir = (idx: number) => {
+    setEditDirs(editDirs.filter((_, i) => i !== idx));
+  };
+
   const saveEdit = (c: Cliente) => {
+    const finalDirs = editDirInput.trim()
+      ? [...editDirs, editDirInput.trim()]
+      : editDirs;
     updateCliente.mutate(
-      { id: c.id, data: { dir: editDir, horario: editHorario || undefined } },
+      { id: c.id, data: { dirs: finalDirs, horario: editHorario || undefined } },
       {
         onSuccess: () => {
           qc.invalidateQueries({ queryKey: getListClientesQueryKey() });
@@ -97,12 +115,12 @@ export default function ClientesTab() {
             />
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">Dirección</Label>
+            <Label className="text-xs text-muted-foreground mb-1 block">Dirección <span className="italic">(opcional)</span></Label>
             <Input
               data-testid="input-cli-dir"
               value={dir}
               onChange={(e) => setDir(e.target.value)}
-              placeholder="Dirección completa"
+              placeholder="Dirección principal"
               onKeyDown={(e) => e.key === "Enter" && guardar()}
             />
           </div>
@@ -152,29 +170,53 @@ export default function ClientesTab() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{c.nombre}</p>
 
-                  {editingId === c.id ? (
-                    <div className="space-y-2 mt-1">
-                      <div className="flex items-center gap-2">
+                  {editingId === c.id && editDirs !== undefined ? (
+                    <div className="space-y-2 mt-2">
+                      {/* Existing addresses */}
+                      {editDirs.length > 0 && (
+                        <div className="space-y-1">
+                          {editDirs.map((d, i) => (
+                            <div key={i} className="flex items-center gap-1.5">
+                              <span className="text-xs text-muted-foreground flex-1 truncate bg-muted/50 rounded px-2 py-1">{d}</span>
+                              <button
+                                className="text-destructive hover:text-destructive/80 p-0.5 shrink-0"
+                                onClick={() => removeEditDir(i)}
+                                title="Quitar dirección"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {/* Add new address */}
+                      <div className="flex items-center gap-1.5">
                         <Input
                           data-testid={`input-edit-dir-${c.id}`}
-                          value={editDir}
-                          onChange={(e) => setEditDir(e.target.value)}
+                          value={editDirInput}
+                          onChange={(e) => setEditDirInput(e.target.value)}
                           className="h-7 text-xs"
-                          placeholder="Dirección"
-                          onKeyDown={(e) => e.key === "Enter" && saveEdit(c)}
-                          autoFocus
+                          placeholder={editDirs.length === 0 ? "Agregar dirección..." : "Agregar otra dirección..."}
+                          onKeyDown={(e) => e.key === "Enter" && addEditDir()}
+                          autoFocus={editDirs.length === 0}
                         />
+                        <button
+                          className="shrink-0 text-muted-foreground hover:text-foreground p-0.5"
+                          onClick={addEditDir}
+                          title="Agregar dirección"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          data-testid={`input-edit-horario-${c.id}`}
-                          value={editHorario}
-                          onChange={(e) => setEditHorario(e.target.value)}
-                          className="h-7 text-xs"
-                          placeholder="Horario de atención (opcional)"
-                          onKeyDown={(e) => e.key === "Enter" && saveEdit(c)}
-                        />
-                      </div>
+                      {/* Horario */}
+                      <Input
+                        data-testid={`input-edit-horario-${c.id}`}
+                        value={editHorario}
+                        onChange={(e) => setEditHorario(e.target.value)}
+                        className="h-7 text-xs"
+                        placeholder="Horario de atención (opcional)"
+                        onKeyDown={(e) => e.key === "Enter" && saveEdit(c)}
+                      />
                       <div className="flex gap-2">
                         <Button size="sm" className="h-7 text-xs" onClick={() => saveEdit(c)} data-testid={`button-save-dir-${c.id}`}>
                           Guardar
@@ -186,7 +228,17 @@ export default function ClientesTab() {
                     </div>
                   ) : (
                     <div className="space-y-0.5 mt-0.5">
-                      <p className="text-xs text-muted-foreground">{c.dir || "(sin dirección)"}</p>
+                      {(c.dirs ?? []).length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic">(sin dirección)</p>
+                      ) : (c.dirs ?? []).length === 1 ? (
+                        <p className="text-xs text-muted-foreground">{c.dirs[0]}</p>
+                      ) : (
+                        <div className="space-y-0.5">
+                          {(c.dirs ?? []).map((d, i) => (
+                            <p key={i} className="text-xs text-muted-foreground">• {d}</p>
+                          ))}
+                        </div>
+                      )}
                       {c.horario && (
                         <p className="text-xs text-sky-600 flex items-center gap-1">
                           <Clock className="h-3 w-3" /> {c.horario}

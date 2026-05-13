@@ -105,9 +105,14 @@ export default function HojaDeRutaTab() {
     setShowSug(matches.length > 0);
   };
 
-  const selectCliente = (c: Cliente) => {
+  const selectCliente = (c: Cliente, addr?: string) => {
     setNombre(c.nombre);
-    setDir(c.dir ?? "");
+    if (addr !== undefined) {
+      setDir(addr);
+    } else {
+      const dirs = c.dirs ?? [];
+      setDir(dirs.length === 1 ? dirs[0] : "");
+    }
     setHorarioCliente(c.horario ?? null);
     setShowSug(false);
   };
@@ -159,7 +164,7 @@ export default function HojaDeRutaTab() {
           );
           if (!yaExiste && nombreTrim) {
             createCliente.mutate(
-              { data: { nombre: nombreTrim, dir: dirTrim || undefined } },
+              { data: { nombre: nombreTrim, dirs: dirTrim ? [dirTrim] : [] } },
               {
                 onSuccess: () => {
                   qc.invalidateQueries({ queryKey: getListClientesQueryKey() });
@@ -244,19 +249,37 @@ export default function HojaDeRutaTab() {
               autoComplete="off"
             />
             {showSug && (
-              <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-card border border-border rounded shadow-md max-h-36 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-card border border-border rounded shadow-md max-h-48 overflow-y-auto">
                 {suggestions.map((c) => (
-                  <div
-                    key={c.id}
-                    className="px-3 py-2 cursor-pointer hover:bg-muted text-sm"
-                    onMouseDown={() => selectCliente(c)}
-                  >
-                    <span className="font-medium">{c.nombre}</span>
-                    {c.dir && <span className="text-muted-foreground text-xs ml-2">— {c.dir}</span>}
-                    {c.horario && (
-                      <span className="text-xs text-sky-600 ml-2 block">🕐 {c.horario}</span>
-                    )}
-                  </div>
+                  (c.dirs ?? []).length > 1 ? (
+                    <div key={c.id}>
+                      <div className="px-3 pt-2 pb-1 text-sm font-medium text-foreground select-none">
+                        {c.nombre}
+                        {c.horario && <span className="text-xs text-sky-600 ml-2">🕐 {c.horario}</span>}
+                      </div>
+                      {(c.dirs ?? []).map((addr, i) => (
+                        <div
+                          key={i}
+                          className="pl-5 pr-3 py-1.5 cursor-pointer hover:bg-muted text-xs text-muted-foreground border-t border-border/30 last:border-b last:border-border/30"
+                          onMouseDown={() => selectCliente(c, addr)}
+                        >
+                          → {addr}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div
+                      key={c.id}
+                      className="px-3 py-2 cursor-pointer hover:bg-muted text-sm"
+                      onMouseDown={() => selectCliente(c)}
+                    >
+                      <span className="font-medium">{c.nombre}</span>
+                      {(c.dirs ?? [])[0] && <span className="text-muted-foreground text-xs ml-2">— {(c.dirs ?? [])[0]}</span>}
+                      {c.horario && (
+                        <span className="text-xs text-sky-600 ml-2 block">🕐 {c.horario}</span>
+                      )}
+                    </div>
+                  )
                 ))}
               </div>
             )}
