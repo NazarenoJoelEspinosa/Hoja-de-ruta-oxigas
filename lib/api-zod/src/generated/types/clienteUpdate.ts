@@ -9,4 +9,5 @@
 export interface ClienteUpdate {
   nombre?: string;
   dir?: string;
+  horario?: string;
 }

@@ -249,6 +249,8 @@ components:
           type: string
         dir:
           type: ["string", "null"]
+        horario:
+          type: ["string", "null"]
 
     ClienteInput:
       type: object
@@ -259,6 +261,8 @@ components:
           minLength: 1
         dir:
           type: string
+        horario:
+          type: string
 
     ClienteUpdate:
       type: object
@@ -266,6 +270,8 @@ components:
         nombre:
           type: string
         dir:
+          type: string
+        horario:
           type: string
 
     PedidoItem:

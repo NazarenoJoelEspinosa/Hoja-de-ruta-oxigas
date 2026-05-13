@@ -67,6 +67,7 @@ export default function HojaDeRutaTab() {
   // Form state
   const [nombre, setNombre] = useState("");
   const [dir, setDir] = useState("");
+  const [horarioCliente, setHorarioCliente] = useState<string | null>(null);
   const [rep, setRep] = useState("Jose");
   const [turno, setTurno] = useState<"manana" | "tarde">("manana");
   const [items, setItems] = useState<PedidoItem[]>([]);
@@ -105,6 +106,7 @@ export default function HojaDeRutaTab() {
   const selectCliente = (c: Cliente) => {
     setNombre(c.nombre);
     setDir(c.dir ?? "");
+    setHorarioCliente(c.horario ?? null);
     setShowSug(false);
   };
 
@@ -118,14 +120,13 @@ export default function HojaDeRutaTab() {
   };
 
   const limpiar = () => {
-    setNombre(""); setDir(""); setRep("Jose"); setTurno("manana");
+    setNombre(""); setDir(""); setHorarioCliente(null); setRep("Jose"); setTurno("manana");
     setItems([]); setItemTipo("garrafa"); setItemProd(GARRAFAS[0]); setItemCant(1);
     setGarrafaEstado("pendiente"); setTienePedido(false); setNota("");
   };
 
   const guardar = () => {
     if (!nombre.trim()) { alert("Completá el nombre del cliente"); return; }
-    if (!items.length) { alert("Agregá al menos un producto"); return; }
     createPedido.mutate(
       {
         data: {
@@ -232,6 +233,9 @@ export default function HojaDeRutaTab() {
                   >
                     <span className="font-medium">{c.nombre}</span>
                     {c.dir && <span className="text-muted-foreground text-xs ml-2">— {c.dir}</span>}
+                    {c.horario && (
+                      <span className="text-xs text-sky-600 ml-2 block">🕐 {c.horario}</span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -247,6 +251,13 @@ export default function HojaDeRutaTab() {
             />
           </div>
         </div>
+
+        {horarioCliente && (
+          <div className="flex items-center gap-2 text-xs text-sky-700 bg-sky-50 border border-sky-200 rounded px-3 py-1.5">
+            <Clock className="h-3.5 w-3.5 shrink-0" />
+            <span>Horario del cliente: <strong>{horarioCliente}</strong></span>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -277,7 +288,7 @@ export default function HojaDeRutaTab() {
 
         {/* Product builder */}
         <div className="border-t border-border pt-3 space-y-2">
-          <p className="text-xs text-muted-foreground">Productos — agregá uno o más</p>
+          <p className="text-xs text-muted-foreground">Productos — opcional, dejá vacío si es solo una visita o cobro</p>
           <div className="grid grid-cols-[1fr_2fr_80px_auto] gap-2 items-end">
             <div>
               <Label className="text-xs text-muted-foreground mb-1 block">Tipo</Label>
@@ -517,16 +528,20 @@ function TurnoSection({
                       <td className="px-3 py-2 font-medium whitespace-nowrap">{p.nombre}</td>
                       <td className="px-3 py-2 text-xs text-muted-foreground hidden sm:table-cell">{p.dir}</td>
                       <td className="px-3 py-2">
-                        <div className="flex flex-wrap gap-1">
-                          {p.items.map((it, j) => (
-                            <span
-                              key={j}
-                              className={`text-xs px-1.5 py-0.5 rounded font-medium ${it.tipo === "garrafa" ? "bg-blue-100 text-blue-800" : "bg-orange-100 text-orange-800"}`}
-                            >
-                              {it.cant}x {it.prod}
-                            </span>
-                          ))}
-                        </div>
+                        {p.items.length === 0 ? (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-medium">Solo visita</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {p.items.map((it, j) => (
+                              <span
+                                key={j}
+                                className={`text-xs px-1.5 py-0.5 rounded font-medium ${it.tipo === "garrafa" ? "bg-blue-100 text-blue-800" : "bg-orange-100 text-orange-800"}`}
+                              >
+                                {it.cant}x {it.prod}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </td>
                       <td className="px-3 py-2">
                         {p.tieneGarrafa ? <GarrafaBadge estado={p.garrafaEstado} /> : <span className="text-muted-foreground">—</span>}

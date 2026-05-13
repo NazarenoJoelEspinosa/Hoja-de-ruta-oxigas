@@ -11,4 +11,6 @@ export interface Cliente {
   nombre: string;
   /** @nullable */
   dir: string | null;
+  /** @nullable */
+  horario?: string | null;
 }

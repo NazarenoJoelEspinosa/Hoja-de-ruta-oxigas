@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Clock } from "lucide-react";
 
 export default function ClientesTab() {
   const qc = useQueryClient();
@@ -26,18 +26,21 @@ export default function ClientesTab() {
 
   const [nombre, setNombre] = useState("");
   const [dir, setDir] = useState("");
+  const [horario, setHorario] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDir, setEditDir] = useState("");
+  const [editHorario, setEditHorario] = useState("");
 
   const guardar = () => {
     if (!nombre.trim()) { alert("Ingresá el nombre"); return; }
     createCliente.mutate(
-      { data: { nombre: nombre.trim(), dir: dir.trim() } },
+      { data: { nombre: nombre.trim(), dir: dir.trim() || undefined, horario: horario.trim() || undefined } },
       {
         onSuccess: () => {
           qc.invalidateQueries({ queryKey: getListClientesQueryKey() });
           setNombre("");
           setDir("");
+          setHorario("");
         },
         onError: (err: unknown) => {
           const e = err as { data?: { error?: string } };
@@ -50,11 +53,12 @@ export default function ClientesTab() {
   const startEdit = (c: Cliente) => {
     setEditingId(c.id);
     setEditDir(c.dir ?? "");
+    setEditHorario(c.horario ?? "");
   };
 
   const saveEdit = (c: Cliente) => {
     updateCliente.mutate(
-      { id: c.id, data: { dir: editDir } },
+      { id: c.id, data: { dir: editDir, horario: editHorario || undefined } },
       {
         onSuccess: () => {
           qc.invalidateQueries({ queryKey: getListClientesQueryKey() });
@@ -103,6 +107,18 @@ export default function ClientesTab() {
             />
           </div>
         </div>
+        <div>
+          <Label className="text-xs text-muted-foreground mb-1 block">
+            Horario de atención <span className="italic">(opcional)</span>
+          </Label>
+          <Input
+            data-testid="input-cli-horario"
+            value={horario}
+            onChange={(e) => setHorario(e.target.value)}
+            placeholder="Ej: Lunes a viernes 8:00-12:00, sábados hasta las 11"
+            onKeyDown={(e) => e.key === "Enter" && guardar()}
+          />
+        </div>
         <div className="flex justify-end">
           <Button size="sm" onClick={guardar} disabled={createCliente.isPending} data-testid="button-guardar-cliente">
             {createCliente.isPending ? "Guardando..." : "+ Guardar cliente"}
@@ -130,33 +146,56 @@ export default function ClientesTab() {
             {clientes.map((c) => (
               <div
                 key={c.id}
-                className="flex items-center justify-between bg-muted/30 border border-border rounded p-3 gap-3"
+                className="flex items-start justify-between bg-muted/30 border border-border rounded p-3 gap-3"
                 data-testid={`card-cliente-${c.id}`}
               >
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{c.nombre}</p>
+
                   {editingId === c.id ? (
-                    <div className="flex items-center gap-2 mt-1">
-                      <Input
-                        data-testid={`input-edit-dir-${c.id}`}
-                        value={editDir}
-                        onChange={(e) => setEditDir(e.target.value)}
-                        className="h-7 text-xs"
-                        onKeyDown={(e) => e.key === "Enter" && saveEdit(c)}
-                        autoFocus
-                      />
-                      <Button size="sm" className="h-7 text-xs" onClick={() => saveEdit(c)} data-testid={`button-save-dir-${c.id}`}>
-                        Guardar
-                      </Button>
-                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setEditingId(null)}>
-                        Cancelar
-                      </Button>
+                    <div className="space-y-2 mt-1">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          data-testid={`input-edit-dir-${c.id}`}
+                          value={editDir}
+                          onChange={(e) => setEditDir(e.target.value)}
+                          className="h-7 text-xs"
+                          placeholder="Dirección"
+                          onKeyDown={(e) => e.key === "Enter" && saveEdit(c)}
+                          autoFocus
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          data-testid={`input-edit-horario-${c.id}`}
+                          value={editHorario}
+                          onChange={(e) => setEditHorario(e.target.value)}
+                          className="h-7 text-xs"
+                          placeholder="Horario de atención (opcional)"
+                          onKeyDown={(e) => e.key === "Enter" && saveEdit(c)}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" className="h-7 text-xs" onClick={() => saveEdit(c)} data-testid={`button-save-dir-${c.id}`}>
+                          Guardar
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setEditingId(null)}>
+                          Cancelar
+                        </Button>
+                      </div>
                     </div>
                   ) : (
-                    <p className="text-xs text-muted-foreground">{c.dir || "(sin dirección)"}</p>
+                    <div className="space-y-0.5 mt-0.5">
+                      <p className="text-xs text-muted-foreground">{c.dir || "(sin dirección)"}</p>
+                      {c.horario && (
+                        <p className="text-xs text-sky-600 flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> {c.horario}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1 shrink-0 mt-0.5">
                   {editingId !== c.id && (
                     <button
                       className="text-xs border border-border rounded px-2 py-1 hover:bg-muted flex items-center gap-1 text-muted-foreground"

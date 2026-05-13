@@ -22,6 +22,7 @@ export const ListClientesResponseItem = zod.object({
   id: zod.number(),
   nombre: zod.string(),
   dir: zod.string().nullable(),
+  horario: zod.string().nullish(),
 });
 export const ListClientesResponse = zod.array(ListClientesResponseItem);
 
@@ -32,6 +33,7 @@ export const ListClientesResponse = zod.array(ListClientesResponseItem);
 export const CreateClienteBody = zod.object({
   nombre: zod.string().min(1),
   dir: zod.string().optional(),
+  horario: zod.string().optional(),
 });
 
 /**
@@ -44,12 +46,14 @@ export const UpdateClienteParams = zod.object({
 export const UpdateClienteBody = zod.object({
   nombre: zod.string().optional(),
   dir: zod.string().optional(),
+  horario: zod.string().optional(),
 });
 
 export const UpdateClienteResponse = zod.object({
   id: zod.number(),
   nombre: zod.string(),
   dir: zod.string().nullable(),
+  horario: zod.string().nullish(),
 });
 
 /**

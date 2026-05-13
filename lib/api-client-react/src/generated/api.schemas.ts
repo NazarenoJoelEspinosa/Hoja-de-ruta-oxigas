@@ -14,17 +14,21 @@ export interface Cliente {
   nombre: string;
   /** @nullable */
   dir: string | null;
+  /** @nullable */
+  horario?: string | null;
 }
 
 export interface ClienteInput {
   /** @minLength 1 */
   nombre: string;
   dir?: string;
+  horario?: string;
 }
 
 export interface ClienteUpdate {
   nombre?: string;
   dir?: string;
+  horario?: string;
 }
 
 export type PedidoItemTipo =

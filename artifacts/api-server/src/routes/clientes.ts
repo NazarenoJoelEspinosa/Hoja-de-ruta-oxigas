@@ -25,7 +25,7 @@ router.post("/clientes", async (req, res) => {
     return;
   }
 
-  const { nombre, dir } = parsed.data;
+  const { nombre, dir, horario } = parsed.data;
 
   const existing = await db
     .select()
@@ -40,7 +40,7 @@ router.post("/clientes", async (req, res) => {
 
   const [cliente] = await db
     .insert(clientesTable)
-    .values({ nombre, dir: dir ?? null })
+    .values({ nombre, dir: dir ?? null, horario: horario ?? null })
     .returning();
 
   res.status(201).json(cliente);
