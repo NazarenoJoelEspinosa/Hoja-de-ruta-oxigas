@@ -16,7 +16,7 @@ import {
   type Pedido,
   type PedidoItem,
   type HistorialDia,
-} from "@workspace/api-client-react";
+} from "../../../../lib/api-client-react/src";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

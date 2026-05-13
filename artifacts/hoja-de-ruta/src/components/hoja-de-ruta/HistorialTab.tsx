@@ -2,7 +2,7 @@ import {
   useGetHistorial,
   getGetHistorialQueryKey,
   type Pedido,
-} from "@workspace/api-client-react";
+} from "../../../../lib/api-client-react/src";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fechaLinda } from "@/lib/dates";
 
