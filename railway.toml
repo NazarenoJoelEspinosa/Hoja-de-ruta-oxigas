@@ -1,5 +1,4 @@
 [build]
-builder = "nixpacks"
 buildCommand = "pnpm --filter @workspace/api-server build"
 
 [deploy]
