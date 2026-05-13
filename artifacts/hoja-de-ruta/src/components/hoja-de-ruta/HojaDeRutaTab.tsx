@@ -5,6 +5,7 @@ import {
   useListPedidos,
   useGetFuturos,
   useCreatePedido,
+  useCreateCliente,
   useUpdatePedido,
   useDeletePedido,
   getListClientesQueryKey,
@@ -61,6 +62,7 @@ export default function HojaDeRutaTab() {
   });
 
   const createPedido = useCreatePedido();
+  const createCliente = useCreateCliente();
   const updatePedido = useUpdatePedido();
   const deletePedido = useDeletePedido();
 
@@ -148,6 +150,24 @@ export default function HojaDeRutaTab() {
           qc.invalidateQueries({ queryKey: getListPedidosQueryKey({ fecha: today }) });
           qc.invalidateQueries({ queryKey: getListPedidosQueryKey() });
           qc.invalidateQueries({ queryKey: getGetTodayStatsQueryKey() });
+
+          // Auto-guardar cliente si no existe todavía
+          const nombreTrim = nombre.trim();
+          const dirTrim = dir.trim();
+          const yaExiste = clientes.some(
+            (c) => c.nombre.toLowerCase() === nombreTrim.toLowerCase()
+          );
+          if (!yaExiste && nombreTrim) {
+            createCliente.mutate(
+              { data: { nombre: nombreTrim, dir: dirTrim || undefined } },
+              {
+                onSuccess: () => {
+                  qc.invalidateQueries({ queryKey: getListClientesQueryKey() });
+                },
+              }
+            );
+          }
+
           limpiar();
         },
       }
