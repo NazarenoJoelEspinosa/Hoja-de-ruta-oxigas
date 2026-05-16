@@ -1,6 +1,0 @@
-[build]
-buildCommand = "pnpm --filter @workspace/api-server build"
-
-[deploy]
-startCommand = "node dist/index.mjs"
-restartPolicyType = "on_failure"
