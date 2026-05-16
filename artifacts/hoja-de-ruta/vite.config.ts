@@ -11,6 +11,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
+      "../../../../lib/api-client-react/src": path.resolve(import.meta.dirname, "../../lib/api-client-react/src"),
     },
     dedupe: ["react", "react-dom"],
   },
