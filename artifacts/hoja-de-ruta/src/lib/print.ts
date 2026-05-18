@@ -40,6 +40,7 @@ export const printShift = (
             <th>Garrafa</th>
             <th>Repartidor</th>
             <th>Nota</th>
+            <th>Cargado por</th>
           </tr>
         </thead>
         <tbody>
@@ -56,6 +57,7 @@ export const printShift = (
                 ${o.tieneGarrafa ? `<span class="tag ${o.garrafaEstado === 'paga' ? 'green' : 'orange'}">${o.garrafaEstado === 'paga' ? 'Pagada' : 'Pendiente'}</span>` : '-'}
               </td>
               <td>${o.rep}</td>
+              <td>${o.creadoPor || "-"}</td>
               <td>${o.tienePedido ? `<span class="tag pink">Especial</span> ${o.nota || ''}` : (o.nota || '-')}</td>
             </tr>
           `).join('')}
