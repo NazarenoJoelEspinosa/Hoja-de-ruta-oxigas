@@ -21,10 +21,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     nombre: localStorage.getItem("usuario"),
   }));
 
-  useEffect(() => {
-    setBaseUrl(API_URL || null);
-    setAuthTokenGetter(() => auth.token);
-  }, [auth.token]);
+  // Inicializar síncronamente para que las queries tengan el token desde el inicio
+  setBaseUrl(API_URL || null);
+  setAuthTokenGetter(() => auth.token);
 
   const login = async (nombre: string, contrasena: string) => {
     const res = await fetch(`${API_URL}/api/auth/login`, {
