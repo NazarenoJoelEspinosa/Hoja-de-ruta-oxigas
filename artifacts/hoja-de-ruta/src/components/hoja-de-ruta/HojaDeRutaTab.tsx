@@ -25,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { printShift } from "@/lib/print";
+import { useAuth } from "@/context/AuthContext";
 import { getTodayKey, fechaLinda, sumarDia, restarDia } from "@/lib/dates";
 import { Printer, Trash2, ChevronRight, ChevronLeft, Plus, X, Clock } from "lucide-react";
 
@@ -48,6 +49,7 @@ const GASES = [
 
 export default function HojaDeRutaTab() {
   const today = getTodayKey();
+  const { nombre: usuarioActual } = useAuth();
   const qc = useQueryClient();
 
   const { data: clientes = [], isLoading: loadingClientes } = useListClientes({
@@ -470,6 +472,8 @@ export default function HojaDeRutaTab() {
         label="🌆 Tarde"
         turno="tarde"
         pedidos={pedidosTarde}
+        clientes={clientes}
+        usuario={usuarioActual}
         loading={loadingPedidos}
         today={today}
         onAdelante={moverAdelante}
@@ -511,6 +515,8 @@ function TurnoSection({
   label: string;
   turno: "manana" | "tarde";
   pedidos: Pedido[];
+  clientes: Cliente[];
+  usuario: string | null;
   loading: boolean;
   today: string;
   onAdelante: (p: Pedido) => void;
@@ -527,7 +533,13 @@ function TurnoSection({
         {fecha && <span className="text-sm text-muted-foreground">{fecha}</span>}
         <button
           className="ml-auto flex items-center gap-1 text-xs border border-border rounded px-2.5 py-1 hover:bg-muted text-muted-foreground"
-          onClick={() => printShift(label, today, pedidos)}
+          onClick={() => {
+            const enriched = pedidos.map(p => ({
+              ...p,
+              horarioCliente: clientes.find(c => c.nombre === p.nombre)?.horario ?? null
+            }));
+            printShift(label, today, enriched, usuario ?? undefined);
+          }}
           data-testid={`button-print-${turno}`}
         >
           <Printer className="h-3.5 w-3.5" /> Imprimir
