@@ -26,10 +26,7 @@ router.get("/pedidos", async (req, res) => {
       .where(eq(pedidosTable.fechaActual, parsed.data.fecha))
       .orderBy(pedidosTable.id);
   } else {
-    pedidos = await db
-      .select()
-      .from(pedidosTable)
-      .orderBy(pedidosTable.id);
+    pedidos = await db.select().from(pedidosTable).orderBy(pedidosTable.id);
   }
 
   res.json(pedidos);
@@ -43,6 +40,8 @@ router.post("/pedidos", async (req, res) => {
   }
 
   const data = parsed.data;
+  const creadoPor = (req as any).usuario as string | undefined;
+
   const [pedido] = await db
     .insert(pedidosTable)
     .values({
@@ -57,6 +56,7 @@ router.post("/pedidos", async (req, res) => {
       items: data.items,
       fechaOrigen: data.fechaOrigen,
       fechaActual: data.fechaActual,
+      creadoPor: creadoPor ?? null,
     })
     .returning();
 

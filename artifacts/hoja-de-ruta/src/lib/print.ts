@@ -1,4 +1,9 @@
-export const printShift = (title: string, dateStr: string, orders: any[]) => {
+export const printShift = (
+  title: string,
+  dateStr: string,
+  orders: any[],
+  generadoPor?: string
+) => {
   const content = `
     <!DOCTYPE html>
     <html lang="es">
@@ -8,13 +13,15 @@ export const printShift = (title: string, dateStr: string, orders: any[]) => {
       <style>
         body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; font-size: 14px; color: #111; }
         h1 { font-size: 20px; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 20px; }
-        table { w-full; border-collapse: collapse; margin-bottom: 20px; width: 100%; }
-        th, td { border: 1px solid #999; padding: 8px 12px; text-align: left; }
+        table { border-collapse: collapse; margin-bottom: 20px; width: 100%; }
+        th, td { border: 1px solid #999; padding: 8px 12px; text-align: left; vertical-align: top; }
         th { background-color: #eee; font-weight: bold; }
         .tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-right: 4px; }
         .pink { background-color: #fce7f3; color: #be185d; }
         .orange { background-color: #fef3c7; color: #b45309; }
         .green { background-color: #dcfce7; color: #15803d; }
+        .horario { font-size: 12px; color: #555; margin-top: 2px; }
+        .footer { margin-top: 24px; font-size: 13px; color: #555; border-top: 1px solid #ccc; padding-top: 10px; }
         @media print {
           body { padding: 0; }
         }
@@ -28,6 +35,7 @@ export const printShift = (title: string, dateStr: string, orders: any[]) => {
             <th style="width: 40px;">#</th>
             <th>Cliente</th>
             <th>Dirección</th>
+            <th>Horario</th>
             <th>Productos</th>
             <th>Garrafa</th>
             <th>Repartidor</th>
@@ -40,6 +48,7 @@ export const printShift = (title: string, dateStr: string, orders: any[]) => {
               <td>${idx + 1}</td>
               <td><strong>${o.nombre}</strong></td>
               <td>${o.dir || '-'}</td>
+              <td>${o.horarioCliente ? `<span class="horario">${o.horarioCliente}</span>` : '-'}</td>
               <td>
                 ${o.items.map((i: any) => `<div>${i.cant}x ${i.prod}</div>`).join('')}
               </td>
@@ -47,11 +56,12 @@ export const printShift = (title: string, dateStr: string, orders: any[]) => {
                 ${o.tieneGarrafa ? `<span class="tag ${o.garrafaEstado === 'paga' ? 'green' : 'orange'}">${o.garrafaEstado === 'paga' ? 'Pagada' : 'Pendiente'}</span>` : '-'}
               </td>
               <td>${o.rep}</td>
-              <td>${o.tienePedido ? `<span class="tag pink">Especial</span> ${o.nota || ''}` : '-'}</td>
+              <td>${o.tienePedido ? `<span class="tag pink">Especial</span> ${o.nota || ''}` : (o.nota || '-')}</td>
             </tr>
           `).join('')}
         </tbody>
       </table>
+      ${generadoPor ? `<div class="footer">Generado por: <strong>${generadoPor}</strong></div>` : ''}
       <script>
         window.onload = () => { window.print(); window.close(); }
       </script>

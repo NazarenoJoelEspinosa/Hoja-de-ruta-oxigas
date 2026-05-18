@@ -23,6 +23,7 @@ export const pedidosTable = pgTable("pedidos", {
   items: jsonb("items").notNull().$type<PedidoItem[]>(),
   fechaOrigen: text("fecha_origen").notNull(),
   fechaActual: text("fecha_actual").notNull(),
+  creadoPor: text("creado_por"),
 });
 
 export const insertPedidoSchema = createInsertSchema(pedidosTable).omit({ id: true }).extend({
