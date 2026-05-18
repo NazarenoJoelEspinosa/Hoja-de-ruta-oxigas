@@ -512,7 +512,7 @@ function GarrafaBadge({ estado }: { estado: string | null | undefined }) {
 }
 
 function TurnoSection({
-  label, turno, pedidos, loading, today, onAdelante, onAtras, onBorrar, fecha,
+  label, turno, pedidos, clientes, usuario, loading, today, onAdelante, onAtras, onBorrar, fecha,
 }: {
   label: string;
   turno: "manana" | "tarde";
