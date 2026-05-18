@@ -459,6 +459,8 @@ export default function HojaDeRutaTab() {
         label="☀ Mañana"
         turno="manana"
         pedidos={pedidosManana}
+        clientes={clientes}
+        usuario={usuarioActual}
         loading={loadingPedidos}
         today={today}
         onAdelante={moverAdelante}
