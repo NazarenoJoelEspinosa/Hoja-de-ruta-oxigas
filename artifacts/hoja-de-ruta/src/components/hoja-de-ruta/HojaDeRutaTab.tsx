@@ -535,13 +535,7 @@ function TurnoSection({
         {fecha && <span className="text-sm text-muted-foreground">{fecha}</span>}
         <button
           className="ml-auto flex items-center gap-1 text-xs border border-border rounded px-2.5 py-1 hover:bg-muted text-muted-foreground"
-          onClick={() => {
-            const enriched = pedidos.map(p => ({
-              ...p,
-              horarioCliente: clientes.find(c => c.nombre === p.nombre)?.horario ?? null
-            }));
-            printShift(label, today, enriched, usuario ?? undefined);
-          }}
+          onClick={() => { const enriched = pedidos.map(p => ({ ...p, horarioCliente: clientes.find(c => c.nombre === p.nombre)?.horario ?? null })); printShift(label, today, enriched, usuario ?? undefined); }}
           data-testid={`button-print-${turno}`}
         >
           <Printer className="h-3.5 w-3.5" /> Imprimir
