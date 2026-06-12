@@ -12,6 +12,7 @@ import {
   getListPedidosQueryKey,
   getGetTodayStatsQueryKey,
   getGetFuturosQueryKey,
+  EstadoEntrega,
   type Cliente,
   type Pedido,
   type PedidoItem,
@@ -223,6 +224,13 @@ export default function HojaDeRutaTab() {
     if (!confirm("¿Eliminar este pedido?")) return;
     deletePedido.mutate(
       { id },
+      { onSuccess: invalidateAll }
+    );
+  };
+
+  const cambiarEstado = (p: Pedido, estado: string) => {
+    updatePedido.mutate(
+      { id: p.id, data: { estadoEntrega: estado as typeof EstadoEntrega[keyof typeof EstadoEntrega] } },
       { onSuccess: invalidateAll }
     );
   };
@@ -466,6 +474,7 @@ export default function HojaDeRutaTab() {
         onAdelante={moverAdelante}
         onAtras={moverAtras}
         onBorrar={borrar}
+        onCambiarEstado={cambiarEstado}
         fecha={fechaLinda(today)}
       />
 
@@ -481,6 +490,7 @@ export default function HojaDeRutaTab() {
         onAdelante={moverAdelante}
         onAtras={moverAtras}
         onBorrar={borrar}
+        onCambiarEstado={cambiarEstado}
         fecha=""
       />
 
@@ -511,8 +521,17 @@ function GarrafaBadge({ estado }: { estado: string | null | undefined }) {
   return <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-medium">Pendiente</span>;
 }
 
+const ESTADO_ENTREGA_OPCIONES = ["Pendiente", "Entregado", "No encontrado", "Reprogramado"] as const;
+
+function EstadoBadge({ estado }: { estado: string }) {
+  if (estado === "Entregado") return <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-800 font-medium">✓ Entregado</span>;
+  if (estado === "No encontrado") return <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">✗ No encontrado</span>;
+  if (estado === "Reprogramado") return <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-medium">↺ Reprogramado</span>;
+  return <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800 font-medium">⏳ Pendiente</span>;
+}
+
 function TurnoSection({
-  label, turno, pedidos, clientes, usuario, loading, today, onAdelante, onAtras, onBorrar, fecha,
+  label, turno, pedidos, clientes, usuario, loading, today, onAdelante, onAtras, onBorrar, onCambiarEstado, fecha,
 }: {
   label: string;
   turno: "manana" | "tarde";
@@ -524,6 +543,7 @@ function TurnoSection({
   onAdelante: (p: Pedido) => void;
   onAtras: (p: Pedido) => void;
   onBorrar: (id: number) => void;
+  onCambiarEstado: (p: Pedido, estado: string) => void;
   fecha: string;
 }) {
   return (
@@ -561,6 +581,7 @@ function TurnoSection({
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Productos</th>
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Garrafa</th>
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground hidden md:table-cell">Pedido especial</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Estado</th>
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground hidden sm:table-cell">Rep.</th>
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground hidden lg:table-cell">Origen</th>
                   <th className="px-3 py-2 text-xs font-medium text-muted-foreground"></th>
@@ -604,6 +625,18 @@ function TurnoSection({
                             {p.nota && <p className="text-xs text-muted-foreground mt-0.5 max-w-[140px] truncate">{p.nota}</p>}
                           </div>
                         ) : <span className="text-muted-foreground">—</span>}
+                      </td>
+                      <td className="px-3 py-2">
+                        <select
+                          value={p.estadoEntrega ?? "Pendiente"}
+                          onChange={(e) => onCambiarEstado(p, e.target.value)}
+                          className="text-xs border border-border rounded px-1.5 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                          data-testid={`select-estado-${p.id}`}
+                        >
+                          {ESTADO_ENTREGA_OPCIONES.map((op) => (
+                            <option key={op} value={op}>{op}</option>
+                          ))}
+                        </select>
                       </td>
                       <td className="px-3 py-2 text-xs whitespace-nowrap hidden sm:table-cell">{p.rep}</td>
                       <td className="px-3 py-2 hidden lg:table-cell">

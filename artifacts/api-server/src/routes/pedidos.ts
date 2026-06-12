@@ -82,6 +82,7 @@ router.patch("/pedidos/:id", async (req, res) => {
   if (body.data.garrafaEstado !== undefined) updateData.garrafaEstado = body.data.garrafaEstado;
   if (body.data.nota !== undefined) updateData.nota = body.data.nota;
   if (body.data.tienePedido !== undefined) updateData.tienePedido = body.data.tienePedido;
+  if (body.data.estadoEntrega !== undefined) updateData.estadoEntrega = body.data.estadoEntrega;
 
   const [updated] = await db
     .update(pedidosTable)

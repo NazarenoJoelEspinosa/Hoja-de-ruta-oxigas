@@ -5,6 +5,7 @@
  * Hoja de Ruta - Gas/Garrafa delivery route management API
  * OpenAPI spec version: 0.1.0
  */
+import type { EstadoEntrega } from "./estadoEntrega";
 import type { PedidoUpdateGarrafaEstado } from "./pedidoUpdateGarrafaEstado";
 import type { PedidoUpdateTurno } from "./pedidoUpdateTurno";
 
@@ -14,4 +15,5 @@ export interface PedidoUpdate {
   garrafaEstado?: PedidoUpdateGarrafaEstado;
   nota?: string;
   tienePedido?: boolean;
+  estadoEntrega?: EstadoEntrega;
 }

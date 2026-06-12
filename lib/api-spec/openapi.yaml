@@ -294,9 +294,13 @@ components:
           type: integer
           minimum: 1
 
+    EstadoEntrega:
+      type: string
+      enum: [Pendiente, Entregado, "No encontrado", Reprogramado]
+
     Pedido:
       type: object
-      required: [id, nombre, dir, rep, turno, tienePedido, tieneGarrafa, items, fechaOrigen, fechaActual]
+      required: [id, nombre, dir, rep, turno, tienePedido, tieneGarrafa, items, fechaOrigen, fechaActual, estadoEntrega]
       properties:
         id:
           type: integer
@@ -326,6 +330,8 @@ components:
           type: string
         fechaActual:
           type: string
+        estadoEntrega:
+          $ref: "#/components/schemas/EstadoEntrega"
 
     PedidoInput:
       type: object
@@ -373,6 +379,8 @@ components:
           type: string
         tienePedido:
           type: boolean
+        estadoEntrega:
+          $ref: "#/components/schemas/EstadoEntrega"
 
     TodayStats:
       type: object

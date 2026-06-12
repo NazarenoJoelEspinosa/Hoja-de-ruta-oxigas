@@ -1,0 +1,376 @@
+# PROYECTO OXIGAS - IMPLEMENTACIÓN REAL SOBRE CÓDIGO EXISTENTE
+
+## REGLA PRINCIPAL
+
+NO diseñes una arquitectura nueva.
+
+NO propongas un sistema desde cero.
+
+NO asumas archivos.
+
+NO asumas tablas.
+
+NO asumas rutas.
+
+NO asumas componentes.
+
+Trabajá EXCLUSIVAMENTE sobre el código real que se adjunta.
+
+Antes de escribir una sola línea de código debés:
+
+1. Auditar la estructura completa.
+2. Identificar frontend.
+3. Identificar backend.
+4. Identificar Drizzle ORM.
+5. Identificar Zod.
+6. Identificar PostgreSQL.
+7. Identificar flujo de impresión.
+8. Identificar flujo de pedidos.
+9. Identificar flujo de clientes.
+10. Identificar flujo de historial.
+
+---
+
+# CONTEXTO IMPORTANTE
+
+El sistema pertenece a OxiGas.
+
+Actualmente existe:
+
+* React
+* TypeScript
+* Express
+* PostgreSQL
+* Drizzle ORM
+* Zod
+* Railway
+
+Todo debe seguir funcionando exactamente igual.
+
+---
+
+# IMPRESIÓN
+
+## DECISIÓN DE ARQUITECTURA (YA APROBADA)
+
+Existe un archivo:
+
+preview_impresion.html
+
+PERO:
+
+NO es la implementación real.
+
+NO debe utilizarse como plantilla estática.
+
+NO debe copiarse directamente.
+
+NO debe reemplazar la impresión actual.
+
+---
+
+## IMPLEMENTACIÓN REAL
+
+La impresión funcional actualmente se genera desde:
+
+print.ts
+
+Esa lógica genera dinámicamente:
+
+* clientes
+* pedidos
+* observaciones
+* domicilios
+* horarios
+* turno
+* empleado
+
+y luego ejecuta:
+
+window.print()
+
+---
+
+## OBJETIVO FUTURO
+
+Mantener la generación dinámica actual.
+
+Modernizar solamente:
+
+* HTML
+* CSS
+* Layout
+* Espaciado
+* Saltos de página
+
+Tomando inspiración de:
+
+* Excel original
+* preview_impresion.html
+
+---
+
+## PROHIBIDO
+
+NO convertir en ticket.
+
+NO convertir en remito.
+
+NO convertir en tabla simplificada.
+
+NO reemplazar print.ts por una plantilla estática.
+
+---
+
+# ETAPA 1 A IMPLEMENTAR
+
+Implementar exclusivamente:
+
+1. estado_entrega
+2. historial_hojas
+3. repartos_fijos
+4. agenda_programada
+
+NO implementar:
+
+* PDF
+* Google Maps
+* Backup
+* Buscador Global
+* Cambios visuales de impresión
+
+---
+
+# ESTADO_ENTREGA
+
+Agregar a pedidos:
+
+estado_entrega
+
+Valores:
+
+* Pendiente
+* Entregado
+* No encontrado
+* Reprogramado
+
+---
+
+## REQUISITOS
+
+Generar:
+
+1. Migración Drizzle real.
+2. Cambios reales en schema.
+3. Cambios reales en rutas.
+4. Cambios reales en Zod.
+5. Cambios reales en frontend si son necesarios.
+
+---
+
+## COMPATIBILIDAD
+
+Todos los pedidos existentes deben quedar:
+
+estado_entrega = Pendiente
+
+---
+
+# HISTORIAL_HOJAS
+
+Crear:
+
+historial_hojas
+
+Campos:
+
+id
+version INTEGER DEFAULT 1
+
+fecha
+turno
+empleado
+
+snapshot JSONB NOT NULL
+
+print_snapshot JSONB
+
+created_at
+
+---
+
+## IMPORTANTE
+
+Historial inmutable.
+
+NO guardar referencias.
+
+NO reconstruir desde clientes actuales.
+
+NO reconstruir desde pedidos actuales.
+
+Guardar snapshot completo.
+
+---
+
+# REPARTOS_FIJOS
+
+Crear:
+
+repartos_fijos
+
+Campos:
+
+id
+cliente_id
+
+dia_semana
+
+orden
+
+observacion
+
+activo
+
+created_at
+
+---
+
+## IMPORTANTE
+
+Un cliente puede pertenecer a múltiples recorridos.
+
+Ejemplo:
+
+Jueves
+Viernes
+Sábado
+
+---
+
+# AGENDA_PROGRAMADA
+
+Crear:
+
+agenda_programada
+
+Campos:
+
+id
+
+cliente_id NULLABLE
+
+tipo
+
+fecha_base
+
+dia_semana
+
+intervalo_dias
+
+dia_mes
+
+observacion TEXT NOT NULL
+
+metadata JSONB
+
+activo
+
+created_at
+
+---
+
+## SOPORTAR
+
+Pedido único
+
+Todos los jueves
+
+Cada 15 días
+
+Día 10 de cada mes
+
+---
+
+## IMPORTANTE
+
+La agenda NO está basada solamente en productos.
+
+Debe permitir:
+
+* Solo cobro
+* Visita técnica
+* Retirar alambre
+* Llevar regulador
+* Entrega documentación
+
+La observación libre es obligatoria.
+
+---
+
+# AUDITORÍA OBLIGATORIA ANTES DE PROGRAMAR
+
+Mostrar:
+
+1. Flujo HojaDeRutaTab → API → Zod → Route → Drizzle.
+2. Schemas encontrados.
+3. Rutas encontradas.
+4. Componentes encontrados.
+5. Archivos afectados.
+6. Diferencias entre el diseño aprobado y el código real.
+
+---
+
+# FORMA DE TRABAJO
+
+Implementar de a una funcionalidad.
+
+Para cada funcionalidad mostrar:
+
+1. Migración.
+2. Archivos modificados.
+3. Diff completo.
+4. Impacto sobre funcionalidades existentes.
+5. Plan de pruebas.
+
+NO avanzar al siguiente módulo hasta validar el anterior.
+
+---
+
+# REQUISITOS OBLIGATORIOS
+
+Mantener compatibilidad total con:
+
+* Railway
+* PostgreSQL
+* Drizzle ORM
+* React
+* TypeScript
+
+NO eliminar tablas.
+
+NO renombrar tablas.
+
+NO romper datos existentes.
+
+Todas las migraciones deben ser aditivas.
+
+---
+
+# OBJETIVO
+
+Quiero implementación real sobre el código existente.
+
+NO quiero arquitectura teórica.
+
+NO quiero pseudocódigo.
+
+NO quiero ejemplos.
+
+Quiero:
+
+* código real
+* migraciones reales
+* diffs reales
+* archivos reales modificados
+* pruebas reales

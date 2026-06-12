@@ -10,6 +10,9 @@ export const pedidoItemSchema = z.object({
 
 export type PedidoItem = z.infer<typeof pedidoItemSchema>;
 
+export const ESTADO_ENTREGA_VALUES = ["Pendiente", "Entregado", "No encontrado", "Reprogramado"] as const;
+export type EstadoEntrega = typeof ESTADO_ENTREGA_VALUES[number];
+
 export const pedidosTable = pgTable("pedidos", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
   nombre: text("nombre").notNull(),
@@ -24,6 +27,7 @@ export const pedidosTable = pgTable("pedidos", {
   fechaOrigen: text("fecha_origen").notNull(),
   fechaActual: text("fecha_actual").notNull(),
   creadoPor: text("creado_por"),
+  estadoEntrega: text("estado_entrega").default("Pendiente").notNull(),
 });
 
 export const insertPedidoSchema = createInsertSchema(pedidosTable).omit({ id: true }).extend({

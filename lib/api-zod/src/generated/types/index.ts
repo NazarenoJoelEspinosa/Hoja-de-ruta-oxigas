@@ -9,6 +9,7 @@
 export * from "./cliente";
 export * from "./clienteInput";
 export * from "./clienteUpdate";
+export * from "./estadoEntrega";
 export * from "./healthStatus";
 export * from "./historialDia";
 export * from "./listPedidosParams";

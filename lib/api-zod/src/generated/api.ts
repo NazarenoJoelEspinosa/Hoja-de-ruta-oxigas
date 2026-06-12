@@ -98,6 +98,12 @@ export const ListPedidosResponseItem = zod.object({
   ),
   fechaOrigen: zod.string(),
   fechaActual: zod.string(),
+  estadoEntrega: zod.enum([
+    "Pendiente",
+    "Entregado",
+    "No encontrado",
+    "Reprogramado",
+  ]),
 });
 export const ListPedidosResponse = zod.array(ListPedidosResponseItem);
 
@@ -138,6 +144,9 @@ export const UpdatePedidoBody = zod.object({
   garrafaEstado: zod.enum(["pendiente", "paga"]).optional(),
   nota: zod.string().optional(),
   tienePedido: zod.boolean().optional(),
+  estadoEntrega: zod
+    .enum(["Pendiente", "Entregado", "No encontrado", "Reprogramado"])
+    .optional(),
 });
 
 export const UpdatePedidoResponse = zod.object({
@@ -161,6 +170,12 @@ export const UpdatePedidoResponse = zod.object({
   ),
   fechaOrigen: zod.string(),
   fechaActual: zod.string(),
+  estadoEntrega: zod.enum([
+    "Pendiente",
+    "Entregado",
+    "No encontrado",
+    "Reprogramado",
+  ]),
 });
 
 /**
@@ -213,6 +228,12 @@ export const GetFuturosResponseItem = zod.object({
       ),
       fechaOrigen: zod.string(),
       fechaActual: zod.string(),
+      estadoEntrega: zod.enum([
+        "Pendiente",
+        "Entregado",
+        "No encontrado",
+        "Reprogramado",
+      ]),
     }),
   ),
 });
@@ -250,6 +271,12 @@ export const GetHistorialResponseItem = zod.object({
       ),
       fechaOrigen: zod.string(),
       fechaActual: zod.string(),
+      estadoEntrega: zod.enum([
+        "Pendiente",
+        "Entregado",
+        "No encontrado",
+        "Reprogramado",
+      ]),
     }),
   ),
 });

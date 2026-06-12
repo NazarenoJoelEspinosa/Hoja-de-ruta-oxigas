@@ -46,6 +46,15 @@ export interface PedidoItem {
   cant: number;
 }
 
+export type EstadoEntrega = (typeof EstadoEntrega)[keyof typeof EstadoEntrega];
+
+export const EstadoEntrega = {
+  Pendiente: "Pendiente",
+  Entregado: "Entregado",
+  No_encontrado: "No encontrado",
+  Reprogramado: "Reprogramado",
+} as const;
+
 export type PedidoTurno = (typeof PedidoTurno)[keyof typeof PedidoTurno];
 
 export const PedidoTurno = {
@@ -81,6 +90,7 @@ export interface Pedido {
   items: PedidoItem[];
   fechaOrigen: string;
   fechaActual: string;
+  estadoEntrega: EstadoEntrega;
 }
 
 export type PedidoInputTurno =
@@ -135,6 +145,7 @@ export interface PedidoUpdate {
   garrafaEstado?: PedidoUpdateGarrafaEstado;
   nota?: string;
   tienePedido?: boolean;
+  estadoEntrega?: EstadoEntrega;
 }
 
 export interface TodayStats {
