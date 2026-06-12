@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
-const USUARIOS = ["Nazareno", "Graciela", "Gladys", "Mariano"];
+const USUARIOS = [
+  "Nazareno",
+  "Graciela",
+  "Gladys",
+  "Mariano",
+  "Vanesa",
+];
 
 export default function Login() {
   const { login } = useAuth();

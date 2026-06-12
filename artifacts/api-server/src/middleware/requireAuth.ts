@@ -10,6 +10,7 @@ export const USUARIOS: Record<string, string> = {
   Graciela: "Alessio1906",
   Gladys:   "Alessio1906",
   Mariano:  "Alessio1906",
+  Vanesa:   "Alessio1906",
 };
 
 export async function generarToken(nombre: string): Promise<string> {
