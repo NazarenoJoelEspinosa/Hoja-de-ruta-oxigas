@@ -73,6 +73,7 @@ export default function HojaDeRutaTab() {
   const [nombre, setNombre] = useState("");
   const [dir, setDir] = useState("");
   const [horarioCliente, setHorarioCliente] = useState<string | null>(null);
+  const [clienteEnDB, setClienteEnDB] = useState(false);
   const [rep, setRep] = useState("Jose");
   const [turno, setTurno] = useState<"manana" | "tarde">("manana");
   const [items, setItems] = useState<PedidoItem[]>([]);
@@ -100,6 +101,7 @@ export default function HojaDeRutaTab() {
 
   const onNombreInput = (val: string) => {
     setNombre(val);
+    setClienteEnDB(false);
     if (!val) { setSuggestions([]); setShowSug(false); return; }
     const matches = clientes.filter((c) =>
       c.nombre.toLowerCase().includes(val.toLowerCase())
@@ -117,6 +119,7 @@ export default function HojaDeRutaTab() {
       setDir(dirs.length === 1 ? dirs[0] : "");
     }
     setHorarioCliente(c.horario ?? null);
+    setClienteEnDB(true);
     setShowSug(false);
   };
 
@@ -130,7 +133,7 @@ export default function HojaDeRutaTab() {
   };
 
   const limpiar = () => {
-    setNombre(""); setDir(""); setHorarioCliente(null); setRep("Jose"); setTurno("manana");
+    setNombre(""); setDir(""); setHorarioCliente(null); setClienteEnDB(false); setRep("Jose"); setTurno("manana");
     setItems([]); setItemTipo("garrafa"); setItemProd(GARRAFAS[0]); setItemCant(1);
     setGarrafaEstado("pendiente"); setTienePedido(false); setNota("");
   };
@@ -296,16 +299,35 @@ export default function HojaDeRutaTab() {
           </div>
           <div>
             <Label className="text-xs text-muted-foreground mb-1 block">Dirección</Label>
-            <Input
-              data-testid="input-dir"
-              value={dir}
-              onChange={(e) => setDir(e.target.value)}
-              placeholder="Se completa automático"
-            />
+            {clienteEnDB ? (
+              <div className="flex items-center gap-2 rounded border border-border bg-muted/40 px-3 py-2 min-h-[36px]">
+                <span className="flex-1 text-sm text-foreground">{dir || <span className="italic text-muted-foreground">Sin dirección</span>}</span>
+              </div>
+            ) : (
+              <Input
+                data-testid="input-dir"
+                value={dir}
+                onChange={(e) => setDir(e.target.value)}
+                placeholder="Se completa automático"
+              />
+            )}
           </div>
         </div>
 
-        {horarioCliente && (
+        {clienteEnDB && (
+          <p className="text-xs text-muted-foreground -mt-1">
+            Dirección y horario del cliente guardado.{" "}
+            <span className="text-sky-600">Para editar, usá la pestaña Clientes.</span>
+          </p>
+        )}
+
+        {clienteEnDB && horarioCliente && (
+          <div className="flex items-center gap-2 text-xs text-sky-700 bg-sky-50 border border-sky-200 rounded px-3 py-1.5">
+            <Clock className="h-3.5 w-3.5 shrink-0" />
+            <span>Horario: <strong>{horarioCliente}</strong></span>
+          </div>
+        )}
+        {!clienteEnDB && horarioCliente && (
           <div className="flex items-center gap-2 text-xs text-sky-700 bg-sky-50 border border-sky-200 rounded px-3 py-1.5">
             <Clock className="h-3.5 w-3.5 shrink-0" />
             <span>Horario del cliente: <strong>{horarioCliente}</strong></span>
@@ -578,6 +600,7 @@ function TurnoSection({
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground w-8">#</th>
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Cliente</th>
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground hidden sm:table-cell">Dirección</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground hidden md:table-cell">Horario</th>
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Productos</th>
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Garrafa</th>
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground hidden md:table-cell">Pedido especial</th>
@@ -599,6 +622,9 @@ function TurnoSection({
                       <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
                       <td className="px-3 py-2 font-medium whitespace-nowrap">{p.nombre}</td>
                       <td className="px-3 py-2 text-xs text-muted-foreground hidden sm:table-cell">{p.dir}</td>
+                      <td className="px-3 py-2 text-xs text-sky-700 hidden md:table-cell whitespace-nowrap">
+                        {clientes.find(c => c.nombre === p.nombre)?.horario ?? <span className="text-muted-foreground">—</span>}
+                      </td>
                       <td className="px-3 py-2">
                         {p.items.length === 0 ? (
                           <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-medium">Solo visita</span>

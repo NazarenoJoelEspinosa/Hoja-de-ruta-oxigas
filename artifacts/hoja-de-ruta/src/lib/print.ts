@@ -1,9 +1,31 @@
-export const printShift = (
+let _logoCache: string | null | undefined = undefined;
+
+async function getLogo(): Promise<string | null> {
+  if (_logoCache !== undefined) return _logoCache;
+  try {
+    const res = await fetch(window.location.origin + "/logo.png");
+    if (!res.ok) { _logoCache = null; return null; }
+    const blob = await res.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => { _logoCache = reader.result as string; resolve(_logoCache!); };
+      reader.onerror = () => { _logoCache = null; resolve(null); };
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    _logoCache = null;
+    return null;
+  }
+}
+
+export const printShift = async (
   title: string,
   dateStr: string,
   orders: any[],
   generadoPor?: string
 ) => {
+  const logoDataUrl = await getLogo();
+
   const isMañana = title.toLowerCase().includes("mañana");
 
   const DIAS_SEMANA = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
@@ -112,6 +134,10 @@ export const printShift = (
     ? `<span class="marcado">MAÑANA</span> / Tarde`
     : `MAÑANA / <span class="marcado">TARDE</span>`;
 
+  const logoHtml = logoDataUrl
+    ? `<img src="${logoDataUrl}" alt="OXI-GAS" style="height:52px; display:block;" />`
+    : `<span style="font-size:18px;font-weight:bold;">OXI-GAS</span>`;
+
   const content = `
     <!DOCTYPE html>
     <html lang="es">
@@ -131,9 +157,10 @@ export const printShift = (
         table { width: 100%; border-collapse: collapse; }
         td, th { border: 1px solid #000; padding: 3px 5px; vertical-align: middle; }
 
-        .encabezado td { border: none; padding: 6px 10px; vertical-align: top; }
+        .encabezado td { border: none; padding: 6px 10px; vertical-align: middle; }
         .encabezado { border-bottom: 1.5px solid #000; }
-        .encabezado .col-izq { width: 60%; border-right: 1.5px solid #000; }
+        .encabezado .col-logo { width: 14%; border-right: 1.5px solid #000; text-align: center; padding: 6px; }
+        .encabezado .col-izq { width: 50%; border-right: 1.5px solid #000; }
         .renglon { margin-top: 6px; font-size: 12px; }
         .renglon:first-child { margin-top: 0; }
         .renglon b { font-weight: bold; }
@@ -216,6 +243,7 @@ export const printShift = (
       <div class="hoja">
         <table class="encabezado">
           <tr>
+            <td class="col-logo">${logoHtml}</td>
             <td class="col-izq">
               <div class="renglon"><b>DÍA:</b> ${diasHtml}</div>
               <div class="renglon"><b>TURNO:</b> ${turnoMañanaHtml}</div>
