@@ -16,6 +16,11 @@ export interface Cliente {
   dirs: string[];
   /** @nullable */
   horario?: string | null;
+  /**
+   * Position in the delivery route (lower = earlier)
+   * @nullable
+   */
+  ordenRuta?: number | null;
 }
 
 export interface ClienteInput {
@@ -23,12 +28,15 @@ export interface ClienteInput {
   nombre: string;
   dirs?: string[];
   horario?: string;
+  ordenRuta?: number;
 }
 
 export interface ClienteUpdate {
   nombre?: string;
   dirs?: string[];
   horario?: string;
+  /** @nullable */
+  ordenRuta?: number | null;
 }
 
 export type PedidoItemTipo =

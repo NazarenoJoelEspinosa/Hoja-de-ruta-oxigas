@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, clientesTable } from "@workspace/db";
-import { eq, ilike } from "drizzle-orm";
+import { eq, ilike, asc, sql } from "drizzle-orm";
 import {
   CreateClienteBody,
   UpdateClienteParams,
@@ -14,7 +14,10 @@ router.get("/clientes", async (req, res) => {
   const clientes = await db
     .select()
     .from(clientesTable)
-    .orderBy(clientesTable.nombre);
+    .orderBy(
+      asc(sql`${clientesTable.ordenRuta} NULLS LAST`),
+      asc(clientesTable.nombre)
+    );
   res.json(clientes);
 });
 
@@ -25,7 +28,7 @@ router.post("/clientes", async (req, res) => {
     return;
   }
 
-  const { nombre, dirs, horario } = parsed.data;
+  const { nombre, dirs, horario, ordenRuta } = parsed.data;
 
   const existing = await db
     .select()
@@ -40,7 +43,7 @@ router.post("/clientes", async (req, res) => {
 
   const [cliente] = await db
     .insert(clientesTable)
-    .values({ nombre, dirs: dirs ?? [], horario: horario ?? null })
+    .values({ nombre, dirs: dirs ?? [], horario: horario ?? null, ordenRuta: ordenRuta ?? null })
     .returning();
 
   res.status(201).json(cliente);
@@ -63,6 +66,7 @@ router.patch("/clientes/:id", async (req, res) => {
   if (body.data.nombre !== undefined) updateData.nombre = body.data.nombre;
   if (body.data.dirs !== undefined) updateData.dirs = body.data.dirs;
   if (body.data.horario !== undefined) updateData.horario = body.data.horario;
+  if (body.data.ordenRuta !== undefined) updateData.ordenRuta = body.data.ordenRuta;
 
   const [updated] = await db
     .update(clientesTable)

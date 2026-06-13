@@ -13,4 +13,9 @@ export interface Cliente {
   dirs: string[];
   /** @nullable */
   horario?: string | null;
+  /**
+   * Position in the delivery route (lower = earlier)
+   * @nullable
+   */
+  ordenRuta?: number | null;
 }

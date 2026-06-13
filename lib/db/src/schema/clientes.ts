@@ -1,4 +1,4 @@
-import { pgTable, bigserial, text, json } from "drizzle-orm/pg-core";
+import { pgTable, bigserial, text, json, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -7,6 +7,7 @@ export const clientesTable = pgTable("clientes", {
   nombre: text("nombre").notNull(),
   dirs: json("dirs").$type<string[]>().notNull().default([]),
   horario: text("horario"),
+  ordenRuta: integer("orden_ruta"),
 });
 
 export const insertClienteSchema = createInsertSchema(clientesTable).omit({ id: true });

@@ -10,4 +10,6 @@ export interface ClienteUpdate {
   nombre?: string;
   dirs?: string[];
   horario?: string;
+  /** @nullable */
+  ordenRuta?: number | null;
 }

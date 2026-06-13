@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Pencil, Trash2, Clock, Plus, X } from "lucide-react";
+import { Pencil, Trash2, Clock, Plus, X, MapPin } from "lucide-react";
 
 export default function ClientesTab() {
   const qc = useQueryClient();
@@ -32,6 +32,7 @@ export default function ClientesTab() {
   const [editDirs, setEditDirs] = useState<string[]>([]);
   const [editDirInput, setEditDirInput] = useState("");
   const [editHorario, setEditHorario] = useState("");
+  const [editOrdenRuta, setEditOrdenRuta] = useState<string>("");
 
   const guardar = () => {
     if (!nombre.trim()) { alert("Ingresá el nombre"); return; }
@@ -58,6 +59,7 @@ export default function ClientesTab() {
     setEditDirs([...(c.dirs ?? [])]);
     setEditDirInput("");
     setEditHorario(c.horario ?? "");
+    setEditOrdenRuta(c.ordenRuta != null ? String(c.ordenRuta) : "");
   };
 
   const addEditDir = () => {
@@ -75,8 +77,9 @@ export default function ClientesTab() {
     const finalDirs = editDirInput.trim()
       ? [...editDirs, editDirInput.trim()]
       : editDirs;
+    const ordenNum = editOrdenRuta.trim() ? parseInt(editOrdenRuta.trim()) : null;
     updateCliente.mutate(
-      { id: c.id, data: { dirs: finalDirs, horario: editHorario || undefined } },
+      { id: c.id, data: { dirs: finalDirs, horario: editHorario || undefined, ordenRuta: ordenNum } },
       {
         onSuccess: () => {
           qc.invalidateQueries({ queryKey: getListClientesQueryKey() });
@@ -217,6 +220,19 @@ export default function ClientesTab() {
                         placeholder="Horario de atención (opcional)"
                         onKeyDown={(e) => e.key === "Enter" && saveEdit(c)}
                       />
+                      {/* Orden en ruta */}
+                      <div className="flex items-center gap-2">
+                        <Input
+                          data-testid={`input-edit-orden-${c.id}`}
+                          type="number"
+                          min={1}
+                          value={editOrdenRuta}
+                          onChange={(e) => setEditOrdenRuta(e.target.value)}
+                          className="h-7 text-xs w-24"
+                          placeholder="Posición en ruta"
+                        />
+                        <span className="text-xs text-muted-foreground">Posición en ruta (1, 2, 3… — vacío = sin orden)</span>
+                      </div>
                       <div className="flex gap-2">
                         <Button size="sm" className="h-7 text-xs" onClick={() => saveEdit(c)} data-testid={`button-save-dir-${c.id}`}>
                           Guardar
@@ -242,6 +258,11 @@ export default function ClientesTab() {
                       {c.horario && (
                         <p className="text-xs text-sky-600 flex items-center gap-1">
                           <Clock className="h-3 w-3" /> {c.horario}
+                        </p>
+                      )}
+                      {c.ordenRuta != null && (
+                        <p className="text-xs text-emerald-700 flex items-center gap-1">
+                          <MapPin className="h-3 w-3" /> Parada #{c.ordenRuta}
                         </p>
                       )}
                     </div>

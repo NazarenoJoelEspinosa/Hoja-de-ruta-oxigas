@@ -11,4 +11,5 @@ export interface ClienteInput {
   nombre: string;
   dirs?: string[];
   horario?: string;
+  ordenRuta?: number;
 }

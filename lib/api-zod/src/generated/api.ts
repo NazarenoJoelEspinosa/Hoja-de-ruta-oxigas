@@ -25,6 +25,10 @@ export const ListClientesResponseItem = zod.object({
     .array(zod.string())
     .describe("List of known delivery addresses for this client"),
   horario: zod.string().nullish(),
+  ordenRuta: zod
+    .number()
+    .nullish()
+    .describe("Position in the delivery route (lower = earlier)"),
 });
 export const ListClientesResponse = zod.array(ListClientesResponseItem);
 
@@ -36,6 +40,7 @@ export const CreateClienteBody = zod.object({
   nombre: zod.string().min(1),
   dirs: zod.array(zod.string()).optional(),
   horario: zod.string().optional(),
+  ordenRuta: zod.number().optional(),
 });
 
 /**
@@ -49,6 +54,7 @@ export const UpdateClienteBody = zod.object({
   nombre: zod.string().optional(),
   dirs: zod.array(zod.string()).optional(),
   horario: zod.string().optional(),
+  ordenRuta: zod.number().nullish(),
 });
 
 export const UpdateClienteResponse = zod.object({
@@ -58,6 +64,10 @@ export const UpdateClienteResponse = zod.object({
     .array(zod.string())
     .describe("List of known delivery addresses for this client"),
   horario: zod.string().nullish(),
+  ordenRuta: zod
+    .number()
+    .nullish()
+    .describe("Position in the delivery route (lower = earlier)"),
 });
 
 /**

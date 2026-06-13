@@ -254,6 +254,9 @@ components:
           description: List of known delivery addresses for this client
         horario:
           type: ["string", "null"]
+        ordenRuta:
+          type: ["integer", "null"]
+          description: Position in the delivery route (lower = earlier)
 
     ClienteInput:
       type: object
@@ -268,6 +271,8 @@ components:
             type: string
         horario:
           type: string
+        ordenRuta:
+          type: integer
 
     ClienteUpdate:
       type: object
@@ -280,6 +285,8 @@ components:
             type: string
         horario:
           type: string
+        ordenRuta:
+          type: ["integer", "null"]
 
     PedidoItem:
       type: object

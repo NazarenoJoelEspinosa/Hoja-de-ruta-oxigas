@@ -611,7 +611,14 @@ function TurnoSection({
                 </tr>
               </thead>
               <tbody>
-                {pedidos.map((p, i) => {
+                {[...pedidos].sort((a, b) => {
+                  const oa = clientes.find(c => c.nombre === a.nombre)?.ordenRuta ?? null;
+                  const ob = clientes.find(c => c.nombre === b.nombre)?.ordenRuta ?? null;
+                  if (oa === null && ob === null) return 0;
+                  if (oa === null) return 1;
+                  if (ob === null) return -1;
+                  return oa - ob;
+                }).map((p, i) => {
                   const lblAd = p.turno === "manana" ? "→ Tarde" : "→ Mañana sig.";
                   const lblAt = p.turno === "tarde" ? "← Mañana" : "← Tarde ant.";
                   const puedeAtras = !(p.turno === "manana" && p.fechaActual === today);
