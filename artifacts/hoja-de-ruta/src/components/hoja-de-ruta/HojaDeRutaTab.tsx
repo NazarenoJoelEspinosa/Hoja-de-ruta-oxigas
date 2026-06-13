@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListClientes,
@@ -7,12 +7,12 @@ import {
   useCreatePedido,
   useCreateCliente,
   useUpdatePedido,
+  useUpdateCliente,
   useDeletePedido,
   getListClientesQueryKey,
   getListPedidosQueryKey,
   getGetTodayStatsQueryKey,
   getGetFuturosQueryKey,
-  EstadoEntrega,
   type Cliente,
   type Pedido,
   type PedidoItem,
@@ -28,7 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { printShift } from "@/lib/print";
 import { useAuth } from "@/context/AuthContext";
 import { getTodayKey, fechaLinda, sumarDia, restarDia } from "@/lib/dates";
-import { Printer, Trash2, ChevronRight, ChevronLeft, Plus, X, Clock } from "lucide-react";
+import { Printer, Trash2, ChevronRight, ChevronLeft, Plus, X, Clock, GripVertical, MapPin } from "lucide-react";
 
 const GARRAFAS = [
   "Garrafa 10 kg Total",
@@ -68,6 +68,7 @@ export default function HojaDeRutaTab() {
   const createCliente = useCreateCliente();
   const updatePedido = useUpdatePedido();
   const deletePedido = useDeletePedido();
+  const updateCliente = useUpdateCliente();
 
   // Form state
   const [nombre, setNombre] = useState("");
@@ -83,6 +84,7 @@ export default function HojaDeRutaTab() {
   const [garrafaEstado, setGarrafaEstado] = useState<"pendiente" | "paga">("pendiente");
   const [tienePedido, setTienePedido] = useState(false);
   const [nota, setNota] = useState("");
+  const [fechaAgendada, setFechaAgendada] = useState(today);
   const [suggestions, setSuggestions] = useState<Cliente[]>([]);
   const [showSug, setShowSug] = useState(false);
   const sugRef = useRef<HTMLDivElement>(null);
@@ -135,7 +137,7 @@ export default function HojaDeRutaTab() {
   const limpiar = () => {
     setNombre(""); setDir(""); setHorarioCliente(null); setClienteEnDB(false); setRep("Jose"); setTurno("manana");
     setItems([]); setItemTipo("garrafa"); setItemProd(GARRAFAS[0]); setItemCant(1);
-    setGarrafaEstado("pendiente"); setTienePedido(false); setNota("");
+    setGarrafaEstado("pendiente"); setTienePedido(false); setNota(""); setFechaAgendada(today);
   };
 
   const guardar = () => {
@@ -153,7 +155,7 @@ export default function HojaDeRutaTab() {
           garrafaEstado: hayGarrafa ? garrafaEstado : undefined,
           items,
           fechaOrigen: today,
-          fechaActual: today,
+          fechaActual: fechaAgendada,
         },
       },
       {
@@ -161,6 +163,7 @@ export default function HojaDeRutaTab() {
           qc.invalidateQueries({ queryKey: getListPedidosQueryKey({ fecha: today }) });
           qc.invalidateQueries({ queryKey: getListPedidosQueryKey() });
           qc.invalidateQueries({ queryKey: getGetTodayStatsQueryKey() });
+          qc.invalidateQueries({ queryKey: getGetFuturosQueryKey() });
 
           // Auto-guardar cliente si no existe todavía
           const nombreTrim = nombre.trim();
@@ -231,11 +234,19 @@ export default function HojaDeRutaTab() {
     );
   };
 
-  const cambiarEstado = (p: Pedido, estado: string) => {
-    updatePedido.mutate(
-      { id: p.id, data: { estadoEntrega: estado as typeof EstadoEntrega[keyof typeof EstadoEntrega] } },
-      { onSuccess: invalidateAll }
-    );
+  const saveOrder = (items: { nombre: string; orden: number }[]) => {
+    const seen = new Set<string>();
+    items.forEach(({ nombre, orden }) => {
+      if (seen.has(nombre)) return;
+      seen.add(nombre);
+      const cliente = clientes.find((c) => c.nombre === nombre);
+      if (cliente) {
+        updateCliente.mutate(
+          { id: cliente.id, data: { ordenRuta: orden } },
+          { onSuccess: () => qc.invalidateQueries({ queryKey: getListClientesQueryKey() }) }
+        );
+      }
+    });
   };
 
   const pedidosManana = pedidos.filter((p) => p.turno === "manana");
@@ -359,6 +370,21 @@ export default function HojaDeRutaTab() {
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        <div>
+          <Label className="text-xs text-muted-foreground mb-1 block">Fecha de entrega</Label>
+          <input
+            type="date"
+            value={fechaAgendada}
+            min={today}
+            onChange={(e) => setFechaAgendada(e.target.value || today)}
+            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            data-testid="input-fecha-agendada"
+          />
+          {fechaAgendada > today && (
+            <p className="text-xs text-amber-600 mt-1">⏰ Este pedido quedará en Postergados hasta el {fechaAgendada}</p>
+          )}
         </div>
 
         {/* Product builder */}
@@ -496,7 +522,7 @@ export default function HojaDeRutaTab() {
         onAdelante={moverAdelante}
         onAtras={moverAtras}
         onBorrar={borrar}
-        onCambiarEstado={cambiarEstado}
+        onSaveOrder={saveOrder}
         fecha={fechaLinda(today)}
       />
 
@@ -512,7 +538,7 @@ export default function HojaDeRutaTab() {
         onAdelante={moverAdelante}
         onAtras={moverAtras}
         onBorrar={borrar}
-        onCambiarEstado={cambiarEstado}
+        onSaveOrder={saveOrder}
         fecha=""
       />
 
@@ -543,17 +569,8 @@ function GarrafaBadge({ estado }: { estado: string | null | undefined }) {
   return <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-medium">Pendiente</span>;
 }
 
-const ESTADO_ENTREGA_OPCIONES = ["Pendiente", "Entregado", "No encontrado", "Reprogramado"] as const;
-
-function EstadoBadge({ estado }: { estado: string }) {
-  if (estado === "Entregado") return <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-800 font-medium">✓ Entregado</span>;
-  if (estado === "No encontrado") return <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">✗ No encontrado</span>;
-  if (estado === "Reprogramado") return <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-medium">↺ Reprogramado</span>;
-  return <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800 font-medium">⏳ Pendiente</span>;
-}
-
 function TurnoSection({
-  label, turno, pedidos, clientes, usuario, loading, today, onAdelante, onAtras, onBorrar, onCambiarEstado, fecha,
+  label, turno, pedidos, clientes, usuario, loading, today, onAdelante, onAtras, onBorrar, onSaveOrder, fecha,
 }: {
   label: string;
   turno: "manana" | "tarde";
@@ -565,23 +582,119 @@ function TurnoSection({
   onAdelante: (p: Pedido) => void;
   onAtras: (p: Pedido) => void;
   onBorrar: (id: number) => void;
-  onCambiarEstado: (p: Pedido, estado: string) => void;
+  onSaveOrder: (items: { nombre: string; orden: number }[]) => void;
   fecha: string;
 }) {
+  const [localOrder, setLocalOrder] = useState<number[]>([]);
+  const [draggedId, setDraggedId] = useState<number | null>(null);
+  const [dragOverId, setDragOverId] = useState<number | null>(null);
+  const [orderChanged, setOrderChanged] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [optimizeProgress, setOptimizeProgress] = useState<{ done: number; total: number } | null>(null);
+
+  const pedidoIds = pedidos.map((p) => p.id).sort().join(",");
+
+  useEffect(() => {
+    const sorted = [...pedidos].sort((a, b) => {
+      const oa = clientes.find((c) => c.nombre === a.nombre)?.ordenRuta ?? null;
+      const ob = clientes.find((c) => c.nombre === b.nombre)?.ordenRuta ?? null;
+      if (oa === null && ob === null) return 0;
+      if (oa === null) return 1;
+      if (ob === null) return -1;
+      return oa - ob;
+    });
+    setLocalOrder(sorted.map((p) => p.id));
+    setOrderChanged(false);
+  }, [pedidoIds]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const displayPedidos = useMemo(() => {
+    const map = new Map(pedidos.map((p) => [p.id, p]));
+    const ordered = localOrder.map((id) => map.get(id)).filter(Boolean) as Pedido[];
+    const extras = pedidos.filter((p) => !localOrder.includes(p.id));
+    return [...ordered, ...extras];
+  }, [localOrder, pedidos]);
+
+  const handleDrop = (targetId: number) => {
+    if (draggedId === null || draggedId === targetId) return;
+    setLocalOrder((prev) => {
+      const next = [...prev];
+      const from = next.indexOf(draggedId);
+      const to = next.indexOf(targetId);
+      if (from === -1 || to === -1) return prev;
+      next.splice(from, 1);
+      next.splice(to, 0, draggedId);
+      return next;
+    });
+    setDraggedId(null);
+    setDragOverId(null);
+    setOrderChanged(true);
+  };
+
+  const handleOptimize = async () => {
+    setIsOptimizing(true);
+    setOptimizeProgress({ done: 0, total: displayPedidos.length });
+    try {
+      const { optimizeRoute } = await import("@/lib/routeOptimizer");
+      const optimized = await optimizeRoute(displayPedidos, (done, total) => {
+        setOptimizeProgress({ done, total });
+      });
+      setLocalOrder((optimized as Pedido[]).map((p) => p.id));
+      setOrderChanged(true);
+    } catch {
+      alert("No se pudo calcular la ruta. Verificá la conexión a internet.");
+    } finally {
+      setIsOptimizing(false);
+      setOptimizeProgress(null);
+    }
+  };
+
+  const handleSaveOrder = () => {
+    const updates = displayPedidos.map((p, i) => ({ nombre: p.nombre, orden: i + 1 }));
+    onSaveOrder(updates);
+    setOrderChanged(false);
+  };
+
   return (
     <div>
-      <div className="flex items-center gap-3 mb-2">
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${turno === "manana" ? "bg-sky-100 text-sky-800" : "bg-amber-100 text-amber-800"}`}>
           {label}
         </span>
         {fecha && <span className="text-sm text-muted-foreground">{fecha}</span>}
-        <button
-          className="ml-auto flex items-center gap-1 text-xs border border-border rounded px-2.5 py-1 hover:bg-muted text-muted-foreground"
-          onClick={() => { const enriched = pedidos.map(p => ({ ...p, horarioCliente: clientes.find(c => c.nombre === p.nombre)?.horario ?? null })); printShift(label, today, enriched, usuario ?? undefined); }}
-          data-testid={`button-print-${turno}`}
-        >
-          <Printer className="h-3.5 w-3.5" /> Imprimir
-        </button>
+        <div className="ml-auto flex items-center gap-2 flex-wrap">
+          {orderChanged && (
+            <button
+              className="text-xs border border-emerald-300 bg-emerald-50 rounded px-2.5 py-1 hover:bg-emerald-100 text-emerald-800 font-medium"
+              onClick={handleSaveOrder}
+            >
+              💾 Guardar orden
+            </button>
+          )}
+          {!loading && pedidos.length > 0 && (
+            <button
+              className="flex items-center gap-1 text-xs border border-border rounded px-2.5 py-1 hover:bg-muted text-muted-foreground disabled:opacity-50"
+              onClick={handleOptimize}
+              disabled={isOptimizing}
+            >
+              {isOptimizing && optimizeProgress
+                ? `Geocodificando… ${optimizeProgress.done}/${optimizeProgress.total}`
+                : <><MapPin className="h-3.5 w-3.5" /> Optimizar ruta</>}
+            </button>
+          )}
+          <button
+            className="flex items-center gap-1 text-xs border border-border rounded px-2.5 py-1 hover:bg-muted text-muted-foreground"
+            onClick={() => {
+              const enriched = displayPedidos.map((p) => ({
+                ...p,
+                horarioCliente: clientes.find((c) => c.nombre === p.nombre)?.horario ?? null,
+              }));
+              printShift(label, today, enriched, usuario ?? undefined);
+            }}
+            data-testid={`button-print-${turno}`}
+          >
+            <Printer className="h-3.5 w-3.5" /> Imprimir
+          </button>
+        </div>
       </div>
 
       <div className="border border-border rounded-lg overflow-hidden bg-card">
@@ -597,6 +710,7 @@ function TurnoSection({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/40">
+                  <th className="px-2 py-2 w-6"></th>
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground w-8">#</th>
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Cliente</th>
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground hidden sm:table-cell">Dirección</th>
@@ -604,33 +718,39 @@ function TurnoSection({
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Productos</th>
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Garrafa</th>
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground hidden md:table-cell">Pedido especial</th>
-                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Estado</th>
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground hidden sm:table-cell">Rep.</th>
                   <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground hidden lg:table-cell">Origen</th>
                   <th className="px-3 py-2 text-xs font-medium text-muted-foreground"></th>
                 </tr>
               </thead>
               <tbody>
-                {[...pedidos].sort((a, b) => {
-                  const oa = clientes.find(c => c.nombre === a.nombre)?.ordenRuta ?? null;
-                  const ob = clientes.find(c => c.nombre === b.nombre)?.ordenRuta ?? null;
-                  if (oa === null && ob === null) return 0;
-                  if (oa === null) return 1;
-                  if (ob === null) return -1;
-                  return oa - ob;
-                }).map((p, i) => {
+                {displayPedidos.map((p, i) => {
                   const lblAd = p.turno === "manana" ? "→ Tarde" : "→ Mañana sig.";
                   const lblAt = p.turno === "tarde" ? "← Mañana" : "← Tarde ant.";
                   const puedeAtras = !(p.turno === "manana" && p.fechaActual === today);
                   const esAnterior = p.fechaOrigen !== p.fechaActual;
+                  const isDragging = draggedId === p.id;
+                  const isDragOver = dragOverId === p.id;
 
                   return (
-                    <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/20" data-testid={`row-pedido-${p.id}`}>
+                    <tr
+                      key={p.id}
+                      draggable
+                      onDragStart={() => setDraggedId(p.id)}
+                      onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
+                      onDragOver={(e) => { e.preventDefault(); setDragOverId(p.id); }}
+                      onDrop={() => handleDrop(p.id)}
+                      className={`border-b border-border last:border-0 transition-colors ${isDragging ? "opacity-40 bg-muted/30" : isDragOver ? "bg-primary/5 border-t-2 border-t-primary" : "hover:bg-muted/20"}`}
+                      data-testid={`row-pedido-${p.id}`}
+                    >
+                      <td className="px-2 py-2 text-muted-foreground cursor-grab active:cursor-grabbing">
+                        <GripVertical className="h-4 w-4 opacity-40 hover:opacity-80" />
+                      </td>
                       <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
                       <td className="px-3 py-2 font-medium whitespace-nowrap">{p.nombre}</td>
                       <td className="px-3 py-2 text-xs text-muted-foreground hidden sm:table-cell">{p.dir}</td>
                       <td className="px-3 py-2 text-xs text-sky-700 hidden md:table-cell whitespace-nowrap">
-                        {clientes.find(c => c.nombre === p.nombre)?.horario ?? <span className="text-muted-foreground">—</span>}
+                        {clientes.find((c) => c.nombre === p.nombre)?.horario ?? <span className="text-muted-foreground">—</span>}
                       </td>
                       <td className="px-3 py-2">
                         {p.items.length === 0 ? (
@@ -658,18 +778,6 @@ function TurnoSection({
                             {p.nota && <p className="text-xs text-muted-foreground mt-0.5 max-w-[140px] truncate">{p.nota}</p>}
                           </div>
                         ) : <span className="text-muted-foreground">—</span>}
-                      </td>
-                      <td className="px-3 py-2">
-                        <select
-                          value={p.estadoEntrega ?? "Pendiente"}
-                          onChange={(e) => onCambiarEstado(p, e.target.value)}
-                          className="text-xs border border-border rounded px-1.5 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                          data-testid={`select-estado-${p.id}`}
-                        >
-                          {ESTADO_ENTREGA_OPCIONES.map((op) => (
-                            <option key={op} value={op}>{op}</option>
-                          ))}
-                        </select>
                       </td>
                       <td className="px-3 py-2 text-xs whitespace-nowrap hidden sm:table-cell">{p.rep}</td>
                       <td className="px-3 py-2 hidden lg:table-cell">

@@ -1,0 +1,2 @@
+- [API server prepared statement cache](api-restart-after-schema.md) — after Drizzle schema changes, restart the API workflow or stale prepared queries fail even if the column exists in DB.
+- [lucide-react available icons](lucide-icons.md) — Route icon does NOT exist; use MapPin. GripVertical exists. Always verify icons before using.

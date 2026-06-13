@@ -19,12 +19,6 @@ function diaLabel(fecha: string): string {
   return `${DIAS_CORTO[dt.getDay()]} ${d}/${m}`;
 }
 
-function EstadoEntregaBadge({ estado }: { estado: string }) {
-  if (estado === "Entregado") return <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-800 font-medium">✓ Entregado</span>;
-  if (estado === "No encontrado") return <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">✗ No encontrado</span>;
-  if (estado === "Reprogramado") return <span className="text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-medium">↺ Reprogramado</span>;
-  return <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800 font-medium">⏳ Pendiente</span>;
-}
 
 function TablaPedidos({ pedidos }: { pedidos: Pedido[] }) {
   if (pedidos.length === 0) return null;
@@ -38,7 +32,6 @@ function TablaPedidos({ pedidos }: { pedidos: Pedido[] }) {
             <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Productos</th>
             <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Garrafa</th>
             <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground hidden md:table-cell">Pedido esp.</th>
-            <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Estado</th>
             <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground hidden sm:table-cell">Repartidor</th>
           </tr>
         </thead>
@@ -70,9 +63,6 @@ function TablaPedidos({ pedidos }: { pedidos: Pedido[] }) {
                     {p.nota && <p className="text-xs text-muted-foreground mt-0.5 max-w-[120px] truncate">{p.nota}</p>}
                   </div>
                 ) : <span className="text-muted-foreground">—</span>}
-              </td>
-              <td className="px-3 py-2">
-                <EstadoEntregaBadge estado={p.estadoEntrega ?? "Pendiente"} />
               </td>
               <td className="px-3 py-2 text-xs hidden sm:table-cell">{p.rep}</td>
             </tr>
