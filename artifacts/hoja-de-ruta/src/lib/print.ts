@@ -4,73 +4,332 @@ export const printShift = (
   orders: any[],
   generadoPor?: string
 ) => {
+  const isMañana = title.toLowerCase().includes("mañana");
+
+  const DIAS_SEMANA = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
+  const DIAS_FILA = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
+
+  let dayOfWeek = "";
+  let dd = "", mm = "", yy = "";
+
+  const parts = dateStr.split("/");
+  if (parts.length === 3) {
+    dd = parts[0].padStart(2, "0");
+    mm = parts[1].padStart(2, "0");
+    yy = parts[2].length === 4 ? parts[2].slice(2) : parts[2];
+    const fullYear = parts[2].length === 2 ? 2000 + parseInt(parts[2]) : parseInt(parts[2]);
+    const date = new Date(fullYear, parseInt(mm) - 1, parseInt(dd));
+    dayOfWeek = DIAS_SEMANA[date.getDay()];
+  }
+
+  const diasHtml = DIAS_FILA.map((d) =>
+    d === dayOfWeek ? `<span class="marcado">${d}</span>` : d
+  ).join(" / ");
+
+  const repartidor = orders.length > 0 ? orders[0].rep : (generadoPor ?? "");
+
+  const buildObs = (o: any): string => {
+    const partes: string[] = [];
+    if (o.items && o.items.length > 0) {
+      partes.push(o.items.map((i: any) => `${i.cant}x ${i.prod}`).join(" + "));
+    }
+    const extras: string[] = [];
+    if (o.tienePedido) extras.push("pedido especial");
+    if (o.tieneGarrafa && o.garrafaEstado === "pendiente") extras.push("cobrar");
+    if (o.nota) extras.push(o.nota);
+
+    if (partes.length === 0 && extras.length === 0)
+      return '<span class="sin-pedido">Sin pedido</span>';
+
+    const obs = partes.join(" + ");
+    if (extras.length === 0) return obs;
+    return (obs ? obs + " — " : "") + extras.join(" — ");
+  };
+
+  const orderRows = orders
+    .map(
+      (o) => `
+      <tr>
+        <td class="cliente">${o.nombre.toUpperCase()}</td>
+        <td class="obs">${buildObs(o)}</td>
+        <td>${(o.dir || "").toUpperCase()}</td>
+        <td class="centro">${o.horarioCliente || ""}</td>
+        <td class="blanco"></td>
+        <td class="blanco"></td>
+        <td class="blanco"></td>
+      </tr>`
+    )
+    .join("");
+
+  const EMPTY_ROWS = 6;
+  const emptyRows = Array(EMPTY_ROWS)
+    .fill(0)
+    .map(
+      () => `
+      <tr>
+        <td class="cliente">&nbsp;</td>
+        <td class="obs">&nbsp;</td>
+        <td>&nbsp;</td>
+        <td class="centro">&nbsp;</td>
+        <td class="blanco"></td>
+        <td class="blanco"></td>
+        <td class="blanco"></td>
+      </tr>`
+    )
+    .join("");
+
+  const gases = [
+    "OXÍGENO", "ACETILENO", "NITRÓGENO", "CO2",
+    "MIX 20", "ARGÓN", "MIX 310", "R. ACINDAR 09", "R. CONARCO 09", "OTROS",
+  ];
+  const gasRows = gases
+    .map(
+      (g) => `
+      <tr>
+        <td class="etiqueta">${g}</td>
+        <td class="blanco"></td>
+        <td class="blanco"></td>
+        <td class="blanco"></td>
+        <td class="blanco"></td>
+      </tr>`
+    )
+    .join("");
+
+  const garrafaTypes = ["10 KG", "10 KG YPF", "15 KG", "15 KG CLARK", "45 KG"];
+  const garrafaRows = garrafaTypes
+    .map(
+      (g) => `
+      <tr>
+        <td class="etiqueta">${g}</td>
+        <td class="blanco"></td>
+        <td class="blanco"></td>
+        <td class="blanco"></td>
+      </tr>`
+    )
+    .join("");
+
+  const turnoMañanaHtml = isMañana
+    ? `<span class="marcado">MAÑANA</span> / Tarde`
+    : `MAÑANA / <span class="marcado">TARDE</span>`;
+
   const content = `
     <!DOCTYPE html>
     <html lang="es">
     <head>
       <meta charset="UTF-8">
-      <title>Hoja de Ruta - ${title} - ${dateStr}</title>
+      <title>Hoja de Ruta - ${isMañana ? "Mañana" : "Tarde"} - ${dd}/${mm}/${yy}</title>
       <style>
-        body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; font-size: 14px; color: #111; }
-        h1 { font-size: 20px; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 20px; }
-        table { border-collapse: collapse; margin-bottom: 20px; width: 100%; }
-        th, td { border: 1px solid #999; padding: 8px 12px; text-align: left; vertical-align: top; }
-        th { background-color: #eee; font-weight: bold; }
-        .tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-right: 4px; }
-        .pink { background-color: #fce7f3; color: #be185d; }
-        .orange { background-color: #fef3c7; color: #b45309; }
-        .green { background-color: #dcfce7; color: #15803d; }
-        .horario { font-size: 12px; color: #555; margin-top: 2px; }
-        .footer { margin-top: 24px; font-size: 13px; color: #555; border-top: 1px solid #ccc; padding-top: 10px; }
+        @page { size: A4 landscape; margin: 8mm; }
+        * { box-sizing: border-box; }
+        body {
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 10.5px;
+          color: #111;
+          margin: 0;
+        }
+        .hoja { border: 1.5px solid #000; }
+        table { width: 100%; border-collapse: collapse; }
+        td, th { border: 1px solid #000; padding: 3px 5px; vertical-align: middle; }
+
+        .encabezado td { border: none; padding: 6px 10px; vertical-align: top; }
+        .encabezado { border-bottom: 1.5px solid #000; }
+        .encabezado .col-izq { width: 60%; border-right: 1.5px solid #000; }
+        .renglon { margin-top: 6px; font-size: 12px; }
+        .renglon:first-child { margin-top: 0; }
+        .renglon b { font-weight: bold; }
+        .marcado {
+          display: inline-block;
+          font-weight: bold;
+          text-decoration: underline;
+          padding: 0 3px;
+          border: 1.5px solid #000;
+          border-radius: 3px;
+        }
+        .linea-fecha {
+          display: inline-block;
+          min-width: 24px;
+          border-bottom: 1px solid #000;
+          text-align: center;
+          font-weight: bold;
+        }
+
+        .tabla-clientes th {
+          background: #e8e8e8;
+          font-size: 10px;
+          text-transform: uppercase;
+          text-align: center;
+          font-weight: bold;
+        }
+        .tabla-clientes td.cliente { font-weight: bold; width: 16%; }
+        .tabla-clientes td.obs { width: 30%; }
+        .tabla-clientes td.centro { text-align: center; width: 8%; }
+        .tabla-clientes td.blanco { width: 7%; }
+        .sin-pedido { color: #888; font-style: italic; }
+        .fijo { color: #b45309; }
+
+        .controles { display: flex; }
+        .controles .bloque { flex: 1; }
+        .controles .bloque:first-child { border-right: 1.5px solid #000; }
+        .controles table { table-layout: fixed; }
+        .controles th, .controles td.etiqueta {
+          background: #e8e8e8;
+          font-weight: bold;
+          font-size: 9.5px;
+          text-transform: uppercase;
+        }
+        .controles td.etiqueta { text-align: left; }
+        .controles th { text-align: center; }
+        .controles td.blanco { height: 16px; }
+        .controles td.etiqueta { width: 34%; }
+
+        .total-row td { font-weight: bold; background: #f3f3f3; }
+
+        .pie-tabla td.etiqueta {
+          background: #e8e8e8;
+          font-weight: bold;
+          font-size: 9.5px;
+          text-transform: uppercase;
+          width: 20%;
+        }
+        .pie-tabla td.blanco { height: 18px; }
+
+        .disclaimer {
+          font-size: 8px;
+          text-align: center;
+          padding: 4px 6px;
+          border-top: 1.5px solid #000;
+          color: #333;
+        }
+        .footer-generado {
+          font-size: 9px;
+          text-align: right;
+          padding: 3px 8px 0;
+          color: #555;
+        }
+
         @media print {
           body { padding: 0; }
         }
       </style>
     </head>
     <body>
-      <h1>Hoja de Ruta: ${title} (${dateStr})</h1>
-      <table>
-        <thead>
+      <div class="hoja">
+        <table class="encabezado">
           <tr>
-            <th style="width: 40px;">#</th>
-            <th>Cliente</th>
-            <th>Dirección</th>
-            <th>Horario</th>
-            <th>Productos</th>
-            <th>Garrafa</th>
-            <th>Repartidor</th>
-            <th>Cargado por</th>
-            <th>Nota</th>
+            <td class="col-izq">
+              <div class="renglon"><b>DÍA:</b> ${diasHtml}</div>
+              <div class="renglon"><b>TURNO:</b> ${turnoMañanaHtml}</div>
+            </td>
+            <td>
+              <div class="renglon"><b>EMPLEADO:</b> ${repartidor}</div>
+              <div class="renglon"><b>FECHA:</b>
+                <span class="linea-fecha">${dd}</span> /
+                <span class="linea-fecha">${mm}</span> /
+                <span class="linea-fecha">${yy}</span>
+              </div>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          ${orders.map((o, idx) => `
-            <tr>
-              <td>${idx + 1}</td>
-              <td><strong>${o.nombre}</strong></td>
-              <td>${o.dir || '-'}</td>
-              <td>${o.horarioCliente ? `<span class="horario">${o.horarioCliente}</span>` : '-'}</td>
-              <td>
-                ${o.items.map((i: any) => `<div>${i.cant}x ${i.prod}</div>`).join('')}
-              </td>
-              <td>
-                ${o.tieneGarrafa ? `<span class="tag ${o.garrafaEstado === 'paga' ? 'green' : 'orange'}">${o.garrafaEstado === 'paga' ? 'Pagada' : 'Pendiente'}</span>` : '-'}
-              </td>
-              <td>${o.rep}</td>
+        </table>
 
-              <td>${o.creadoPor || "-"}</td>
-              <td>${o.tienePedido ? `<span class="tag pink">Especial</span> ${o.nota || ''}` : (o.nota || '-')}</td>
-          `).join('')}
-        </tbody>
-      </table>
-      ${generadoPor ? `<div class="footer">Generado por: <strong>${generadoPor}</strong></div>` : ''}
+        <table class="tabla-clientes">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Observación</th>
+              <th>Domicilio</th>
+              <th>Horario</th>
+              <th>Cta. Cte.</th>
+              <th>Efectivo</th>
+              <th>Cheque</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${orderRows}
+            ${emptyRows}
+          </tbody>
+        </table>
+
+        <div class="controles">
+          <div class="bloque">
+            <table>
+              <thead>
+                <tr>
+                  <th rowspan="2" style="width:34%">Gases</th>
+                  <th colspan="2">Salida</th>
+                  <th colspan="2">Regreso</th>
+                </tr>
+                <tr>
+                  <th>Vacíos</th>
+                  <th>Llenos</th>
+                  <th>Vacíos</th>
+                  <th>Llenos</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${gasRows}
+                <tr class="total-row">
+                  <td class="etiqueta">TOTALES</td>
+                  <td class="blanco"></td>
+                  <td class="blanco"></td>
+                  <td class="blanco"></td>
+                  <td class="blanco"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="bloque">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:34%">Garrafas</th>
+                  <th>Llenas</th>
+                  <th>Vacías</th>
+                  <th>Dev. Llenas</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${garrafaRows}
+                <tr class="total-row">
+                  <td class="etiqueta">TOTAL</td>
+                  <td class="blanco"></td>
+                  <td class="blanco"></td>
+                  <td class="blanco"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <table class="pie-tabla">
+          <tr>
+            <td class="etiqueta">Tubos prestados / devolución</td>
+            <td class="blanco"></td>
+            <td class="etiqueta" style="width:12%">Cliente</td>
+            <td class="blanco"></td>
+          </tr>
+          <tr>
+            <td class="etiqueta">Otros</td>
+            <td class="blanco" colspan="3"></td>
+          </tr>
+          <tr>
+            <td class="etiqueta">Totales</td>
+            <td class="blanco" colspan="3"></td>
+          </tr>
+        </table>
+
+        <div class="disclaimer">
+          Transporte Material - Clase 2 - Clase 5 - Div. 51 — Recibí instrucciones de Seguridad Resolución S/T. 233/86
+        </div>
+      </div>
+      ${generadoPor ? `<div class="footer-generado">Generado por: <strong>${generadoPor}</strong></div>` : ""}
       <script>
         window.onload = () => { window.print(); window.close(); }
       </script>
     </body>
     </html>
   `;
-  const win = window.open('', '_blank');
+
+  const win = window.open("", "_blank");
   if (win) {
     win.document.write(content);
     win.document.close();
