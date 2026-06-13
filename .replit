@@ -46,10 +46,10 @@ outputType = "webview"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/hoja-de-ruta run dev"
-waitForPort = 3000
+waitForPort = 5000
 
 [agent]
-stack = "PNPM_WORKSPACE"
+stack = "BEST_EFFORT_FALLBACK"
 expertMode = true
 
 [postMerge]
@@ -61,8 +61,8 @@ localPort = 3000
 externalPort = 3001
 
 [[ports]]
-localPort = 8080
-externalPort = 8080
+localPort = 5000
+externalPort = 80
 
 [[ports]]
 localPort = 8081
@@ -72,5 +72,14 @@ externalPort = 80
 localPort = 21163
 externalPort = 3000
 
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+JWT_SECRET = "3409c8fb483b46d0b3a4c1d3af067f6ecba3c91aad0748bcb1757b169b1f89d3"
