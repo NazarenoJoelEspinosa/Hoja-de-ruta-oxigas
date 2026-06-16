@@ -11,20 +11,26 @@ import {
 const router = Router();
 
 router.get("/clientes", async (req, res) => {
-  const clientes = await db
-    .select()
-    .from(clientesTable)
-    .orderBy(
+  try {
+    const clientes = await db.select().from(clientesTable).orderBy(
       asc(sql`${clientesTable.ordenRuta} NULLS LAST`),
       asc(clientesTable.nombre)
     );
-  res.json(clientes);
+    res.json(clientes);
+  } catch (e: any) {
+    console.error("ERROR REAL:", e?.cause?.message ?? e?.message ?? e);
+    res.status(500).json({ error: e?.cause?.message ?? e?.message });
+  }
 });
 
 router.post("/clientes", async (req, res) => {
-  const parsed = CreateClienteBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+  try {
+    const parsed = CreateClienteBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+
     return;
   }
 
