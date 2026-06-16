@@ -24,13 +24,9 @@ router.get("/clientes", async (req, res) => {
 });
 
 router.post("/clientes", async (req, res) => {
-  try {
-    const parsed = CreateClienteBody.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.message });
-      return;
-    }
-
+  const parsed = CreateClienteBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
     return;
   }
 
