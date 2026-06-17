@@ -13,7 +13,7 @@ const router = Router();
 router.get("/clientes", async (req, res) => {
   try {
     const clientes = await db.select().from(clientesTable).orderBy(
-      asc(sql`${clientesTable.ordenRuta} NULLS LAST`),
+      sql`${clientesTable.ordenRuta} NULLS LAST`,
       asc(clientesTable.nombre)
     );
     res.json(clientes);
