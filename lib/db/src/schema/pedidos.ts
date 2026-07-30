@@ -5,7 +5,11 @@ import { z } from "zod/v4";
 export const pedidoItemSchema = z.object({
   tipo: z.enum(["garrafa", "gas"]),
   prod: z.string(),
+  // Cantidad de unidades: garrafas o tubos de gas.
   cant: z.number().int().min(1),
+  // Solo para gases: tamaño de cada tubo (m³ o kg según el gas).
+  // Admite decimales y es opcional (no todos los gases se cargan con medida).
+  tamano: z.number().min(0).nullable().optional(),
 });
 
 export type PedidoItem = z.infer<typeof pedidoItemSchema>;
@@ -35,3 +39,4 @@ export const insertPedidoSchema = createInsertSchema(pedidosTable).omit({ id: tr
 });
 export type InsertPedido = z.infer<typeof insertPedidoSchema>;
 export type Pedido = typeof pedidosTable.$inferSelect;
+
