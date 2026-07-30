@@ -87,6 +87,8 @@ export const ListPedidosQueryParams = zod.object({
     .describe("Filter by fechaActual (YYYY-MM-DD). Omit to get all."),
 });
 
+export const listPedidosResponseItemsItemTamanoMin = 0;
+
 export const ListPedidosResponseItem = zod.object({
   id: zod.number(),
   nombre: zod.string(),
@@ -103,7 +105,17 @@ export const ListPedidosResponseItem = zod.object({
     zod.object({
       tipo: zod.enum(["garrafa", "gas"]),
       prod: zod.string(),
-      cant: zod.number().min(1),
+      cant: zod
+        .number()
+        .min(1)
+        .describe("Cantidad de unidades (garrafas o tubos)."),
+      tamano: zod
+        .number()
+        .min(listPedidosResponseItemsItemTamanoMin)
+        .nullish()
+        .describe(
+          "Tamaño de cada tubo, solo para gases (m³ o kg según el gas). Opcional.",
+        ),
     }),
   ),
   fechaOrigen: zod.string(),
@@ -121,6 +133,8 @@ export const ListPedidosResponse = zod.array(ListPedidosResponseItem);
  * @summary Create a delivery order
  */
 
+export const createPedidoBodyItemsItemTamanoMin = 0;
+
 export const CreatePedidoBody = zod.object({
   nombre: zod.string(),
   dir: zod.string().optional(),
@@ -134,7 +148,17 @@ export const CreatePedidoBody = zod.object({
     zod.object({
       tipo: zod.enum(["garrafa", "gas"]),
       prod: zod.string(),
-      cant: zod.number().min(1),
+      cant: zod
+        .number()
+        .min(1)
+        .describe("Cantidad de unidades (garrafas o tubos)."),
+      tamano: zod
+        .number()
+        .min(createPedidoBodyItemsItemTamanoMin)
+        .nullish()
+        .describe(
+          "Tamaño de cada tubo, solo para gases (m³ o kg según el gas). Opcional.",
+        ),
     }),
   ),
   fechaOrigen: zod.string(),
@@ -159,6 +183,8 @@ export const UpdatePedidoBody = zod.object({
     .optional(),
 });
 
+export const updatePedidoResponseItemsItemTamanoMin = 0;
+
 export const UpdatePedidoResponse = zod.object({
   id: zod.number(),
   nombre: zod.string(),
@@ -175,7 +201,17 @@ export const UpdatePedidoResponse = zod.object({
     zod.object({
       tipo: zod.enum(["garrafa", "gas"]),
       prod: zod.string(),
-      cant: zod.number().min(1),
+      cant: zod
+        .number()
+        .min(1)
+        .describe("Cantidad de unidades (garrafas o tubos)."),
+      tamano: zod
+        .number()
+        .min(updatePedidoResponseItemsItemTamanoMin)
+        .nullish()
+        .describe(
+          "Tamaño de cada tubo, solo para gases (m³ o kg según el gas). Opcional.",
+        ),
     }),
   ),
   fechaOrigen: zod.string(),
@@ -210,6 +246,8 @@ export const GetTodayStatsResponse = zod.object({
  * @summary Get orders scheduled for future dates (fechaActual > today), grouped by date
  */
 
+export const getFuturosResponsePedidosItemItemsItemTamanoMin = 0;
+
 export const GetFuturosResponseItem = zod.object({
   fecha: zod.string(),
   pedidos: zod.array(
@@ -233,7 +271,17 @@ export const GetFuturosResponseItem = zod.object({
         zod.object({
           tipo: zod.enum(["garrafa", "gas"]),
           prod: zod.string(),
-          cant: zod.number().min(1),
+          cant: zod
+            .number()
+            .min(1)
+            .describe("Cantidad de unidades (garrafas o tubos)."),
+          tamano: zod
+            .number()
+            .min(getFuturosResponsePedidosItemItemsItemTamanoMin)
+            .nullish()
+            .describe(
+              "Tamaño de cada tubo, solo para gases (m³ o kg según el gas). Opcional.",
+            ),
         }),
       ),
       fechaOrigen: zod.string(),
@@ -252,6 +300,8 @@ export const GetFuturosResponse = zod.array(GetFuturosResponseItem);
 /**
  * @summary Get order history grouped by fechaOrigen
  */
+
+export const getHistorialResponsePedidosItemItemsItemTamanoMin = 0;
 
 export const GetHistorialResponseItem = zod.object({
   fecha: zod.string(),
@@ -276,7 +326,17 @@ export const GetHistorialResponseItem = zod.object({
         zod.object({
           tipo: zod.enum(["garrafa", "gas"]),
           prod: zod.string(),
-          cant: zod.number().min(1),
+          cant: zod
+            .number()
+            .min(1)
+            .describe("Cantidad de unidades (garrafas o tubos)."),
+          tamano: zod
+            .number()
+            .min(getHistorialResponsePedidosItemItemsItemTamanoMin)
+            .nullish()
+            .describe(
+              "Tamaño de cada tubo, solo para gases (m³ o kg según el gas). Opcional.",
+            ),
         }),
       ),
       fechaOrigen: zod.string(),
