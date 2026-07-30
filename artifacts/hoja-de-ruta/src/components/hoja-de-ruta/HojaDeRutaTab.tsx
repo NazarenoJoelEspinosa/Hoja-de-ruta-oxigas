@@ -39,14 +39,33 @@ const GARRAFAS = [
   "Garrafa Clark YPF",
 ];
 const GASES = [
-  "Mix20 (ATAL)",
+  "Mix20",
   "Gas Carbónico",
   "Oxígeno",
   "Nitrógeno",
-  "Mix310 (Noxal)",
+  "Mix310",
   "Argón",
   "Acetileno",
 ];
+
+// Unidad de medida de cada gas: m³ para los gases "de línea", kg para acetileno y CO2.
+const GAS_UNIDADES: Record<string, string> = {
+  "Oxígeno": "m³",
+  "Argón": "m³",
+  "Mix20": "m³",
+  "Mix310": "m³",
+  "Nitrógeno": "m³",
+  "Acetileno": "kg",
+  "Gas Carbónico": "kg",
+};
+
+function formatItem(it: PedidoItem): string {
+  if (it.tipo === "garrafa") return `${it.cant}x ${it.prod}`;
+  const unidad = GAS_UNIDADES[it.prod] ?? "";
+  const base = `${it.cant}x ${it.prod}`;
+  if (it.tamano === null || it.tamano === undefined) return base;
+  return `${base} (${it.tamano}${unidad ? " " + unidad : ""} c/u)`;
+}
 
 export default function HojaDeRutaTab() {
   const today = getTodayKey();
@@ -80,7 +99,8 @@ export default function HojaDeRutaTab() {
   const [items, setItems] = useState<PedidoItem[]>([]);
   const [itemTipo, setItemTipo] = useState<"garrafa" | "gas">("garrafa");
   const [itemProd, setItemProd] = useState(GARRAFAS[0]);
-  const [itemCant, setItemCant] = useState(1);
+  const [itemCant, setItemCant] = useState("1");
+  const [itemTamano, setItemTamano] = useState("");
   const [garrafaEstado, setGarrafaEstado] = useState<"pendiente" | "paga">("pendiente");
   const [tienePedido, setTienePedido] = useState(false);
   const [nota, setNota] = useState("");
@@ -126,8 +146,16 @@ export default function HojaDeRutaTab() {
   };
 
   const addItem = () => {
-    setItems([...items, { tipo: itemTipo, prod: itemProd, cant: itemCant }]);
-    setItemCant(1);
+    const cant = parseInt(itemCant, 10) || 1;
+    let tamano: number | undefined;
+    if (itemTipo === "gas") {
+      const raw = itemTamano.trim().replace(",", ".");
+      const parsed = raw === "" ? NaN : parseFloat(raw);
+      tamano = Number.isNaN(parsed) ? undefined : parsed;
+    }
+    setItems([...items, { tipo: itemTipo, prod: itemProd, cant, tamano }]);
+    setItemCant("1");
+    setItemTamano("");
   };
 
   const removeItem = (idx: number) => {
@@ -136,7 +164,7 @@ export default function HojaDeRutaTab() {
 
   const limpiar = () => {
     setNombre(""); setDir(""); setHorarioCliente(null); setClienteEnDB(false); setRep("Jose"); setTurno("manana");
-    setItems([]); setItemTipo("garrafa"); setItemProd(GARRAFAS[0]); setItemCant(1);
+    setItems([]); setItemTipo("garrafa"); setItemProd(GARRAFAS[0]); setItemCant("1"); setItemTamano("");
     setGarrafaEstado("pendiente"); setTienePedido(false); setNota(""); setFechaAgendada(today);
   };
 
@@ -390,7 +418,7 @@ export default function HojaDeRutaTab() {
         {/* Product builder */}
         <div className="border-t border-border pt-3 space-y-2">
           <p className="text-xs text-muted-foreground">Productos — opcional, dejá vacío si es solo una visita o cobro</p>
-          <div className="grid grid-cols-[1fr_2fr_80px_auto] gap-2 items-end">
+          <div className="grid grid-cols-[1fr_2fr_70px_90px_auto] gap-2 items-end">
             <div>
               <Label className="text-xs text-muted-foreground mb-1 block">Tipo</Label>
               <Select
@@ -399,6 +427,7 @@ export default function HojaDeRutaTab() {
                   const t = v as "garrafa" | "gas";
                   setItemTipo(t);
                   setItemProd(t === "garrafa" ? GARRAFAS[0] : GASES[0]);
+                  setItemTamano("");
                 }}
               >
                 <SelectTrigger data-testid="select-item-tipo">
@@ -424,19 +453,49 @@ export default function HojaDeRutaTab() {
               </Select>
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">Cant.</Label>
+              <Label className="text-xs text-muted-foreground mb-1 block">
+                {itemTipo === "gas" ? "Tubos" : "Cant."}
+              </Label>
               <Input
                 data-testid="input-item-cant"
                 type="number"
                 min={1}
+                step={1}
                 value={itemCant}
-                onChange={(e) => setItemCant(parseInt(e.target.value) || 1)}
+                onChange={(e) => setItemCant(e.target.value)}
               />
+            </div>
+            <div>
+              {itemTipo === "gas" ? (
+                <>
+                  <Label className="text-xs text-muted-foreground mb-1 block">
+                    Tamaño{GAS_UNIDADES[itemProd] ? ` (${GAS_UNIDADES[itemProd]})` : ""}
+                  </Label>
+                  <Input
+                    data-testid="input-item-tamano"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    placeholder="opcional, ej: 6.2"
+                    value={itemTamano}
+                    onChange={(e) => setItemTamano(e.target.value)}
+                  />
+                </>
+              ) : (
+                <div className="h-9" />
+              )}
             </div>
             <Button variant="outline" size="sm" onClick={addItem} data-testid="button-add-item" className="h-9">
               <Plus className="h-4 w-4 mr-1" /> Agregar
             </Button>
           </div>
+
+          {itemTipo === "gas" && (
+            <p className="text-xs text-muted-foreground">
+              Ej: 2 tubos de Oxígeno de 6 m³ c/u → cargá esta línea, y si tenés otro tubo de otro tamaño (ej: 8 m³), agregalo como una línea aparte.
+            </p>
+          )}
 
           {items.length > 0 && (
             <div className="bg-muted rounded p-2 space-y-1">
@@ -447,7 +506,13 @@ export default function HojaDeRutaTab() {
                     {it.prod}
                   </span>
                   <span className="flex items-center gap-2">
-                    <span className="font-semibold">x{it.cant}</span>
+                    <span className="font-semibold">
+                      {it.tipo === "garrafa"
+                        ? `x${it.cant}`
+                        : it.tamano === null || it.tamano === undefined
+                        ? `x${it.cant} (sin medida)`
+                        : `x${it.cant} de ${it.tamano}${GAS_UNIDADES[it.prod] ? " " + GAS_UNIDADES[it.prod] : ""}`}
+                    </span>
                     <button
                       className="text-destructive hover:text-destructive/80"
                       onClick={() => removeItem(i)}
@@ -762,7 +827,7 @@ function TurnoSection({
                                 key={j}
                                 className={`text-xs px-1.5 py-0.5 rounded font-medium ${it.tipo === "garrafa" ? "bg-blue-100 text-blue-800" : "bg-orange-100 text-orange-800"}`}
                               >
-                                {it.cant}x {it.prod}
+                                {formatItem(it)}
                               </span>
                             ))}
                           </div>
@@ -877,7 +942,7 @@ function PostergadosSection({
                       <div className="flex flex-wrap gap-1">
                         {p.items.map((it, i) => (
                           <span key={i} className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                            {it.cant}x {it.prod}
+                            {formatItem(it)}
                           </span>
                         ))}
                       </div>
