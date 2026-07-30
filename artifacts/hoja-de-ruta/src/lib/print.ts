@@ -50,10 +50,28 @@ export const printShift = async (
 
   const repartidor = orders.length > 0 ? orders[0].rep : (generadoPor ?? "");
 
+  const GAS_UNIDADES: Record<string, string> = {
+    "Oxígeno": "m³",
+    "Argón": "m³",
+    "Mix20": "m³",
+    "Mix310": "m³",
+    "Nitrógeno": "m³",
+    "Acetileno": "kg",
+    "Gas Carbónico": "kg",
+  };
+
+  const formatItemImpresion = (i: any): string => {
+    if (i.tipo === "garrafa") return `${i.cant}x ${i.prod}`;
+    const unidad = GAS_UNIDADES[i.prod] ?? "";
+    const base = `${i.cant}x ${i.prod}`;
+    if (i.tamano === null || i.tamano === undefined || i.tamano === "") return base;
+    return `${base} (${i.tamano}${unidad ? " " + unidad : ""} c/u)`;
+  };
+
   const buildObs = (o: any): string => {
     const partes: string[] = [];
     if (o.items && o.items.length > 0) {
-      partes.push(o.items.map((i: any) => `${i.cant}x ${i.prod}`).join(" + "));
+      partes.push(o.items.map((i: any) => formatItemImpresion(i)).join(" + "));
     }
     const extras: string[] = [];
     if (o.tienePedido) extras.push("pedido especial");
@@ -83,7 +101,10 @@ export const printShift = async (
     )
     .join("");
 
-  const EMPTY_ROWS = 6;
+  // Antes se dejaban 6 renglones en blanco fijos abajo de los clientes; eso
+  // era lo que hacía que con muchos clientes el listado se pasara a una
+  // segunda hoja. Se deja solo un par para completar a mano.
+  const EMPTY_ROWS = 2;
   const emptyRows = Array(EMPTY_ROWS)
     .fill(0)
     .map(
@@ -99,6 +120,23 @@ export const printShift = async (
       </tr>`
     )
     .join("");
+
+  // Con muchos clientes el listado puede pasarse de una hoja A4. Para que
+  // siempre entre todo en una sola hoja, se achica letra y relleno de filas
+  // a medida que hay más pedidos.
+  const totalFilas = orders.length + EMPTY_ROWS;
+  let bodyFontSize = 10.5;
+  let rowPaddingV = 3;
+  if (totalFilas > 22) {
+    bodyFontSize = 8.3;
+    rowPaddingV = 1.5;
+  } else if (totalFilas > 16) {
+    bodyFontSize = 9.3;
+    rowPaddingV = 2;
+  } else if (totalFilas > 12) {
+    bodyFontSize = 10;
+    rowPaddingV = 2.5;
+  }
 
   const gases = [
     "OXÍGENO", "ACETILENO", "NITRÓGENO", "CO2",
@@ -149,13 +187,13 @@ export const printShift = async (
         * { box-sizing: border-box; }
         body {
           font-family: Arial, Helvetica, sans-serif;
-          font-size: 10.5px;
+          font-size: ${bodyFontSize}px;
           color: #111;
           margin: 0;
         }
         .hoja { border: 1.5px solid #000; }
         table { width: 100%; border-collapse: collapse; }
-        td, th { border: 1px solid #000; padding: 3px 5px; vertical-align: middle; }
+        td, th { border: 1px solid #000; padding: ${rowPaddingV}px 5px; vertical-align: middle; }
 
         .encabezado td { border: none; padding: 6px 10px; vertical-align: middle; }
         .encabezado { border-bottom: 1.5px solid #000; }
@@ -211,12 +249,12 @@ export const printShift = async (
 
         .total-row td { font-weight: bold; background: #f3f3f3; }
 
+        .pie-tabla { margin-top: -1.5px; }
         .pie-tabla td.etiqueta {
           background: #e8e8e8;
           font-weight: bold;
           font-size: 9.5px;
           text-transform: uppercase;
-          width: 20%;
         }
         .pie-tabla td.blanco { height: 18px; }
 
@@ -325,25 +363,24 @@ export const printShift = async (
                 </tr>
               </tbody>
             </table>
+            <table class="pie-tabla">
+              <tr>
+                <td class="etiqueta" style="width:38%">Tubos prestados / devolución</td>
+                <td class="blanco"></td>
+                <td class="etiqueta" style="width:18%">Cliente</td>
+                <td class="blanco"></td>
+              </tr>
+              <tr>
+                <td class="etiqueta">Otros</td>
+                <td class="blanco" colspan="3"></td>
+              </tr>
+              <tr>
+                <td class="etiqueta">Totales</td>
+                <td class="blanco" colspan="3"></td>
+              </tr>
+            </table>
           </div>
         </div>
-
-        <table class="pie-tabla">
-          <tr>
-            <td class="etiqueta">Tubos prestados / devolución</td>
-            <td class="blanco"></td>
-            <td class="etiqueta" style="width:12%">Cliente</td>
-            <td class="blanco"></td>
-          </tr>
-          <tr>
-            <td class="etiqueta">Otros</td>
-            <td class="blanco" colspan="3"></td>
-          </tr>
-          <tr>
-            <td class="etiqueta">Totales</td>
-            <td class="blanco" colspan="3"></td>
-          </tr>
-        </table>
 
         <div class="disclaimer">
           Transporte Material - Clase 2 - Clase 5 - Div. 51 — Recibí instrucciones de Seguridad Resolución S/T. 233/86
