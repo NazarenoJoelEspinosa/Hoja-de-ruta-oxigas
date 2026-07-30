@@ -300,6 +300,11 @@ components:
         cant:
           type: integer
           minimum: 1
+          description: Cantidad de unidades (garrafas o tubos).
+        tamano:
+          type: ["number", "null"]
+          minimum: 0
+          description: Tamaño de cada tubo, solo para gases (m³ o kg según el gas). Opcional.
 
     EstadoEntrega:
       type: string
