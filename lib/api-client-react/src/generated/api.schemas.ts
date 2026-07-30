@@ -50,8 +50,17 @@ export const PedidoItemTipo = {
 export interface PedidoItem {
   tipo: PedidoItemTipo;
   prod: string;
-  /** @minimum 1 */
+  /**
+   * Cantidad de unidades (garrafas o tubos).
+   * @minimum 1
+   */
   cant: number;
+  /**
+   * Tamaño de cada tubo, solo para gases (m³ o kg según el gas). Opcional.
+   * @minimum 0
+   * @nullable
+   */
+  tamano?: number | null;
 }
 
 export type EstadoEntrega = (typeof EstadoEntrega)[keyof typeof EstadoEntrega];
@@ -74,8 +83,7 @@ export const PedidoTurno = {
  * @nullable
  */
 export type PedidoGarrafaEstado =
-  | (typeof PedidoGarrafaEstado)[keyof typeof PedidoGarrafaEstado]
-  | null;
+  (typeof PedidoGarrafaEstado)[keyof typeof PedidoGarrafaEstado] | null;
 
 export const PedidoGarrafaEstado = {
   pendiente: "pendiente",
