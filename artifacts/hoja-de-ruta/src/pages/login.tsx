@@ -34,7 +34,7 @@ export default function Login() {
       <div className="w-full max-w-sm bg-card border rounded-xl shadow-sm p-8">
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-bold tracking-tight text-primary uppercase">Hoja de Ruta</h1>
-          <p className="text-sm text-muted-foreground mt-1">Distribución de Garrafas y Gases</p>
+          <p className="text-sm text-muted-foreground mt-1">Diribución de Garrafas y Gases</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
