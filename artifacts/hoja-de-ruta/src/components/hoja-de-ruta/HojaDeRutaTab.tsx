@@ -656,6 +656,7 @@ function TurnoSection({
   const [orderChanged, setOrderChanged] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizeProgress, setOptimizeProgress] = useState<{ done: number; total: number } | null>(null);
+  const [emptyRows, setEmptyRows] = useState(2);
 
   const pedidoIds = pedidos.map((p) => p.id).sort().join(",");
 
@@ -746,6 +747,21 @@ function TurnoSection({
                 : <><MapPin className="h-3.5 w-3.5" /> Optimizar ruta</>}
             </button>
           )}
+          <label className="flex items-center gap-1 text-xs text-muted-foreground" title="Filas en blanco al final de la hoja para completar a mano">
+            Filas vacías:
+            <input
+              type="number"
+              min={0}
+              max={20}
+              value={emptyRows}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                setEmptyRows(Number.isNaN(v) ? 0 : Math.min(20, Math.max(0, v)));
+              }}
+              className="w-12 border border-border rounded px-1 py-0.5 text-center"
+              data-testid={`input-empty-rows-${turno}`}
+            />
+          </label>
           <button
             className="flex items-center gap-1 text-xs border border-border rounded px-2.5 py-1 hover:bg-muted text-muted-foreground"
             onClick={() => {
@@ -753,7 +769,7 @@ function TurnoSection({
                 ...p,
                 horarioCliente: clientes.find((c) => c.nombre === p.nombre)?.horario ?? null,
               }));
-              printShift(label, today, enriched, usuario ?? undefined);
+              printShift(label, today, enriched, usuario ?? undefined, emptyRows);
             }}
             data-testid={`button-print-${turno}`}
           >
